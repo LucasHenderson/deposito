@@ -1,0 +1,11 @@
+<div  class="layout">
+<app-sidebar [isOpen]="sidebarVisible"></app-sidebar>
+
+<div class="main" [class.expand]="!sidebarVisible"> 
+  
+  <app-topbar (toggleSidebar)="toggle()"></app-topbar>
+
+  <router-outlet></router-outlet>
+  
+</div>
+</div>

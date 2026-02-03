@@ -1,0 +1,33 @@
+<aside class="sidebar" [class.show]="isOpen">
+  <nav class="sidebar-menu">
+    <a routerLink="/painel-principal" 
+       routerLinkActive="active" 
+       [routerLinkActiveOptions]="{exact: true}" 
+       class="menu-item">Painel Principal</a>
+
+    <a routerLink="/recebimentos-pendentes" 
+       routerLinkActive="active" 
+       [routerLinkActiveOptions]="{exact: true}" 
+       class="menu-item">Recebimentos Pendentes</a>
+
+    <a routerLink="/adiantamento-salarial" 
+       routerLinkActive="active" 
+       [routerLinkActiveOptions]="{exact: true}" 
+       class="menu-item">Adiantamento Salarial</a>
+    
+    <a routerLink="/clientes" 
+       routerLinkActive="active" 
+       [routerLinkActiveOptions]="{exact: true}" 
+       class="menu-item">Clientes</a>
+    
+    <a routerLink="/produtos" 
+       routerLinkActive="active" 
+       [routerLinkActiveOptions]="{exact: true}" 
+       class="menu-item">Produtos</a>
+       
+    <a routerLink="/entregadores" 
+       routerLinkActive="active" 
+       [routerLinkActiveOptions]="{exact: true}" 
+       class="menu-item">Entregadores</a>
+  </nav>
+</aside>

@@ -1,0 +1,18 @@
+
+.layout {
+    display: flex;
+}
+
+
+.main {
+    margin-left: 260px;
+    width: 100%;
+    transition: 0.3s ease;
+}
+
+/* RESPONSIVO */
+@media (max-width: 768px) {
+    .main {
+        margin-left: 0;
+    }
+}

@@ -1,0 +1,13 @@
+<header class="topbar">
+    <button class="menu-toggle" (click)="toggleSidebar.emit()">☰</button>
+
+    <div class="topbar-right">
+
+        <div class="user-avatar" (click)="isMenuOpen = !isMenuOpen">
+        </div>
+
+        <div class="dropdown-menu" [class.show-menu]="isMenuOpen">
+            <a (click)="logout()" class="dropdown-item logout">🔌 Logout</a>
+        </div>
+    </div>
+</header>
