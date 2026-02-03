@@ -1,18 +1,31 @@
-
 .layout {
     display: flex;
+    min-height: 100vh;
 }
 
-
 .main {
-    margin-left: 260px;
-    width: 100%;
-    transition: 0.3s ease;
+    margin-left: 270px;
+    width: calc(100% - 270px);
+    min-height: 100vh;
+    transition: margin-left 0.3s ease, width 0.3s ease;
+    background: var(--body-bg);
+}
+
+.main-content {
+    padding: 32px;
 }
 
 /* RESPONSIVO */
+
 @media (max-width: 768px) {
     .main {
         margin-left: 0;
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .main-content {
+        padding: 20px 16px;
     }
 }
