@@ -5,6 +5,7 @@ import { EntregadorService } from '../../services/entregador.service';
 import { Entregador, EntregadorFormData } from '../../models/entregador.model';
 
 type ModalType = 'create' | 'edit' | 'deactivate' | null;
+type SortOrder = 'ativos-primeiro' | 'inativos-primeiro' | 'nenhum';
 
 @Component({
   selector: 'app-entregadores',
@@ -27,26 +28,59 @@ export class Entregadores {
   formData = signal<EntregadorFormData>({
     nomeCompleto: '',
     telefone: '',
-    identificador: ''
+    identificador: '',
+    salario: 0,
+    dataCadastro: new Date()
   });
   
   formErrors = signal({
     nomeCompleto: '',
     telefone: '',
-    identificador: ''
+    identificador: '',
+    salario: '',
+    dataCadastro: ''
   });
 
-  // Filtro
+  // Filtro e busca
   showInactive = signal(false);
+  searchTerm = signal('');
+  sortOrder = signal<SortOrder>('nenhum');
 
   // Computed
   entregadores = this.entregadorService.getEntregadores();
   
   filteredEntregadores = computed(() => {
-    const list = this.entregadores();
-    return this.showInactive() 
-      ? list 
-      : list.filter(e => e.ativo);
+    let list = this.entregadores();
+    
+    // Filtro de ativos/inativos
+    if (!this.showInactive()) {
+      list = list.filter(e => e.ativo);
+    }
+    
+    // Busca por nome ou identificador
+    const search = this.searchTerm().toLowerCase().trim();
+    if (search) {
+      list = list.filter(e => 
+        e.nomeCompleto.toLowerCase().includes(search) ||
+        e.identificador.toLowerCase().includes(search)
+      );
+    }
+    
+    // Ordenação
+    const order = this.sortOrder();
+    if (order === 'ativos-primeiro') {
+      list = [...list].sort((a, b) => {
+        if (a.ativo === b.ativo) return 0;
+        return a.ativo ? -1 : 1;
+      });
+    } else if (order === 'inativos-primeiro') {
+      list = [...list].sort((a, b) => {
+        if (a.ativo === b.ativo) return 0;
+        return a.ativo ? 1 : -1;
+      });
+    }
+    
+    return list;
   });
 
   totalPages = computed(() => 
@@ -75,7 +109,9 @@ export class Entregadores {
     this.formData.set({
       nomeCompleto: entregador.nomeCompleto,
       telefone: entregador.telefone,
-      identificador: entregador.identificador
+      identificador: entregador.identificador,
+      salario: entregador.salario,
+      dataCadastro: entregador.dataCadastro
     });
     this.modalType.set('edit');
   }
@@ -96,7 +132,9 @@ export class Entregadores {
     const errors = {
       nomeCompleto: '',
       telefone: '',
-      identificador: ''
+      identificador: '',
+      salario: '',
+      dataCadastro: ''
     };
 
     const data = this.formData();
@@ -124,8 +162,16 @@ export class Entregadores {
       }
     }
 
+    if (!data.salario || data.salario <= 0) {
+      errors.salario = 'Salário deve ser maior que zero';
+    }
+
+    if (!data.dataCadastro) {
+      errors.dataCadastro = 'Data de cadastro é obrigatória';
+    }
+
     this.formErrors.set(errors);
-    return !errors.nomeCompleto && !errors.telefone && !errors.identificador;
+    return !errors.nomeCompleto && !errors.telefone && !errors.identificador && !errors.salario && !errors.dataCadastro;
   }
 
   // Máscara de telefone
@@ -153,6 +199,26 @@ export class Entregadores {
     const input = event.target as HTMLInputElement;
     const value = input.value.replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 3);
     this.formData.update(data => ({ ...data, identificador: value }));
+  }
+
+  // Atualizar nome completo
+  updateNomeCompleto(event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.formData.update(data => ({ ...data, nomeCompleto: input.value }));
+  }
+
+  // Formatar salário
+  formatSalario(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const value = parseFloat(input.value) || 0;
+    this.formData.update(data => ({ ...data, salario: value }));
+  }
+
+  // Atualizar data de cadastro
+  updateDataCadastro(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const date = new Date(input.value);
+    this.formData.update(data => ({ ...data, dataCadastro: date }));
   }
 
   // Ações CRUD
@@ -201,19 +267,50 @@ export class Entregadores {
 
   toggleShowInactive() {
     this.showInactive.update(v => !v);
-    this.currentPage.set(1); // Reset para primeira página
+    this.currentPage.set(1);
+  }
+
+  // Busca
+  updateSearch(event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.searchTerm.set(input.value);
+    this.currentPage.set(1);
+  }
+
+  clearSearch() {
+    this.searchTerm.set('');
+    this.currentPage.set(1);
+  }
+
+  // Ordenação
+  changeSortOrder(order: SortOrder) {
+    this.sortOrder.set(order);
+    this.currentPage.set(1);
+  }
+
+  // Converter data para formato do input
+  getDateInputValue(date: Date): string {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   private resetForm() {
     this.formData.set({
       nomeCompleto: '',
       telefone: '',
-      identificador: ''
+      identificador: '',
+      salario: 0,
+      dataCadastro: new Date()
     });
     this.formErrors.set({
       nomeCompleto: '',
       telefone: '',
-      identificador: ''
+      identificador: '',
+      salario: '',
+      dataCadastro: ''
     });
   }
 }

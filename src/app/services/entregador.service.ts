@@ -11,6 +11,7 @@ export class EntregadorService {
       nomeCompleto: 'João Silva Santos',
       telefone: '(63)98765-4321',
       identificador: 'JSS',
+      salario: 1800.00,
       ativo: true,
       dataCadastro: new Date('2023-01-15')
     },
@@ -19,6 +20,7 @@ export class EntregadorService {
       nomeCompleto: 'Maria Oliveira Costa',
       telefone: '(63)99876-5432',
       identificador: 'MOC',
+      salario: 1950.00,
       ativo: true,
       dataCadastro: new Date('2023-02-20')
     },
@@ -27,6 +29,7 @@ export class EntregadorService {
       nomeCompleto: 'Pedro Henrique Almeida',
       telefone: '(63)98123-4567',
       identificador: 'PHA',
+      salario: 2100.00,
       ativo: true,
       dataCadastro: new Date('2023-03-10')
     },
@@ -35,6 +38,7 @@ export class EntregadorService {
       nomeCompleto: 'Ana Paula Ferreira',
       telefone: '(63)99234-5678',
       identificador: 'APF',
+      salario: 1750.00,
       ativo: false,
       dataCadastro: new Date('2023-01-25')
     },
@@ -43,6 +47,7 @@ export class EntregadorService {
       nomeCompleto: 'Carlos Eduardo Souza',
       telefone: '(63)98345-6789',
       identificador: 'CES',
+      salario: 2200.00,
       ativo: true,
       dataCadastro: new Date('2023-04-05')
     },
@@ -51,6 +56,7 @@ export class EntregadorService {
       nomeCompleto: 'Juliana Rodrigues Lima',
       telefone: '(63)99456-7890',
       identificador: 'JRL',
+      salario: 1900.00,
       ativo: true,
       dataCadastro: new Date('2023-05-12')
     },
@@ -59,6 +65,7 @@ export class EntregadorService {
       nomeCompleto: 'Rafael Santos Barbosa',
       telefone: '(63)98567-8901',
       identificador: 'RSB',
+      salario: 2050.00,
       ativo: true,
       dataCadastro: new Date('2023-06-18')
     },
@@ -67,6 +74,7 @@ export class EntregadorService {
       nomeCompleto: 'Fernanda Costa Pereira',
       telefone: '(63)99678-9012',
       identificador: 'FCP',
+      salario: 1850.00,
       ativo: true,
       dataCadastro: new Date('2023-07-22')
     },
@@ -75,6 +83,7 @@ export class EntregadorService {
       nomeCompleto: 'Lucas Martins Oliveira',
       telefone: '(63)98789-0123',
       identificador: 'LMO',
+      salario: 1700.00,
       ativo: false,
       dataCadastro: new Date('2023-02-14')
     },
@@ -83,6 +92,7 @@ export class EntregadorService {
       nomeCompleto: 'Camila Alves Ribeiro',
       telefone: '(63)99890-1234',
       identificador: 'CAR',
+      salario: 2000.00,
       ativo: true,
       dataCadastro: new Date('2023-08-30')
     },
@@ -91,6 +101,7 @@ export class EntregadorService {
       nomeCompleto: 'Bruno Henrique Dias',
       telefone: '(63)98901-2345',
       identificador: 'BHD',
+      salario: 1950.00,
       ativo: true,
       dataCadastro: new Date('2023-09-15')
     },
@@ -99,6 +110,7 @@ export class EntregadorService {
       nomeCompleto: 'Patricia Gomes Silva',
       telefone: '(63)99012-3456',
       identificador: 'PGS',
+      salario: 2150.00,
       ativo: true,
       dataCadastro: new Date('2023-10-20')
     }
@@ -116,9 +128,12 @@ export class EntregadorService {
 
     const newEntregador: Entregador = {
       id: this.generateId(),
-      ...data,
+      nomeCompleto: data.nomeCompleto,
+      telefone: data.telefone,
+      identificador: data.identificador,
+      salario: data.salario,
       ativo: true,
-      dataCadastro: new Date()
+      dataCadastro: data.dataCadastro
     };
 
     this.entregadores.update(list => [...list, newEntregador]);
