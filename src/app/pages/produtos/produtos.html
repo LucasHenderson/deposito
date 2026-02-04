@@ -1,1 +1,438 @@
-<p>produtos works!</p>
+<div class="produtos-page">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="title-section">
+        <h1 class="page-title">Produtos</h1>
+        <p class="page-subtitle">Gerencie seu catálogo e estoque de produtos</p>
+      </div>
+      
+      <div class="header-actions">
+        <button class="btn-primary" (click)="openCreateModal()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Novo Produto
+        </button>
+      </div>
+    </div>
+
+    <!-- Barra de Busca e Filtros -->
+    <div class="filters-bar">
+      <div class="search-box">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="search-icon">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input 
+          type="text" 
+          class="search-input" 
+          placeholder="Buscar produto por nome..."
+          [value]="searchTerm()"
+          (input)="updateSearch($event)"
+        >
+        @if (searchTerm()) {
+          <button class="clear-search" (click)="clearSearch()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        }
+      </div>
+
+      <div class="filter-buttons">
+        <div class="sort-dropdown">
+          <button class="btn-filter">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m3 16 4 4 4-4"/>
+              <path d="M7 20V4"/>
+              <path d="m21 8-4-4-4 4"/>
+              <path d="M17 4v16"/>
+            </svg>
+            Ordenar Estoque
+          </button>
+          <div class="sort-options">
+            <button (click)="changeSortOrder('nenhum')" [class.active]="sortOrder() === 'nenhum'">
+              Sem ordenação
+            </button>
+            <button (click)="changeSortOrder('maior-estoque')" [class.active]="sortOrder() === 'maior-estoque'">
+              Maior estoque
+            </button>
+            <button (click)="changeSortOrder('menor-estoque')" [class.active]="sortOrder() === 'menor-estoque'">
+              Menor estoque
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lista de Produtos -->
+  <div class="produtos-grid">
+    @for (produto of paginatedProdutos(); track produto.id) {
+      <div class="produto-card">
+        <div class="card-header">
+          <div class="produto-icon">
+            @if (produto.nome.includes('Gás')) {
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
+              </svg>
+            } @else if (produto.nome.includes('Água')) {
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+              </svg>
+            } @else {
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+            }
+          </div>
+          
+          <div class="estoque-badge" [class.critico]="getEstoqueStatus(produto.quantidadeEstoque) === 'critico'" 
+                                      [class.baixo]="getEstoqueStatus(produto.quantidadeEstoque) === 'baixo'">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+            </svg>
+            {{ produto.quantidadeEstoque }}
+          </div>
+        </div>
+        
+        <div class="card-body">
+          <h3 class="produto-nome">{{ produto.nome }}</h3>
+          
+          <div class="precos-grid">
+            <div class="preco-item">
+              <div class="forma-pagamento">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                  <line x1="1" y1="10" x2="23" y2="10"/>
+                </svg>
+                <span>Crédito</span>
+              </div>
+              <div class="valor">R$ {{ produto.precos.credito.toFixed(2).replace('.', ',') }}</div>
+            </div>
+
+            <div class="preco-item">
+              <div class="forma-pagamento">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                  <line x1="1" y1="10" x2="23" y2="10"/>
+                </svg>
+                <span>Débito</span>
+              </div>
+              <div class="valor">R$ {{ produto.precos.debito.toFixed(2).replace('.', ',') }}</div>
+            </div>
+
+            <div class="preco-item">
+              <div class="forma-pagamento">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" y1="1" x2="12" y2="23"/>
+                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                </svg>
+                <span>Dinheiro</span>
+              </div>
+              <div class="valor">R$ {{ produto.precos.dinheiro.toFixed(2).replace('.', ',') }}</div>
+            </div>
+
+            <div class="preco-item destaque">
+              <div class="forma-pagamento">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                  <path d="M2 17l10 5 10-5"/>
+                  <path d="M2 12l10 5 10-5"/>
+                </svg>
+                <span>PIX</span>
+              </div>
+              <div class="valor">R$ {{ produto.precos.pix.toFixed(2).replace('.', ',') }}</div>
+            </div>
+          </div>
+
+          <div class="melhor-preco">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+            Melhor: R$ {{ getMelhorPreco(produto.precos).toFixed(2).replace('.', ',') }}
+          </div>
+
+          <div class="estoque-status">
+            @if (getEstoqueStatus(produto.quantidadeEstoque) === 'critico') {
+              <div class="status-alert critico">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="8" x2="12" y2="12"/>
+                  <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                Estoque Crítico
+              </div>
+            } @else if (getEstoqueStatus(produto.quantidadeEstoque) === 'baixo') {
+              <div class="status-alert baixo">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                Estoque Baixo
+              </div>
+            }
+          </div>
+        </div>
+        
+        <div class="card-actions">
+          <button class="btn-action btn-edit" (click)="openEditModal(produto)" title="Editar">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </button>
+          
+          <button class="btn-action btn-delete" (click)="openDeleteModal(produto)" title="Excluir">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 6h18"/>
+              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+              <line x1="10" y1="11" x2="10" y2="17"/>
+              <line x1="14" y1="11" x2="14" y2="17"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    } @empty {
+      <div class="empty-state">
+        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+          <line x1="12" y1="22.08" x2="12" y2="12"/>
+        </svg>
+        <h3>Nenhum produto encontrado</h3>
+        <p>Adicione produtos ao seu catálogo</p>
+      </div>
+    }
+  </div>
+
+  <!-- Paginação -->
+  @if (totalPages() > 1) {
+    <div class="pagination">
+      <button class="pagination-btn" (click)="previousPage()" [disabled]="currentPage() === 1">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </button>
+      
+      @for (page of pages(); track page) {
+        <button class="pagination-btn" [class.active]="currentPage() === page" (click)="goToPage(page)">
+          {{ page }}
+        </button>
+      }
+      
+      <button class="pagination-btn" (click)="nextPage()" [disabled]="currentPage() === totalPages()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </button>
+    </div>
+  }
+
+  <!-- Modal Backdrop -->
+  @if (modalType()) {
+    <div class="modal-backdrop" (click)="closeModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        
+        <!-- Modal de Criação/Edição -->
+        @if (modalType() === 'create' || modalType() === 'edit') {
+          <div class="modal-header">
+            <h2 class="modal-title">
+              {{ modalType() === 'create' ? 'Novo Produto' : 'Editar Produto' }}
+            </h2>
+            <button class="btn-close" (click)="closeModal()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+
+          <form class="modal-form" (ngSubmit)="handleSubmit()">
+            <div class="form-group">
+              <label for="nome">Nome do Produto *</label>
+              <input 
+                type="text" 
+                id="nome" 
+                class="form-input"
+                [class.error]="formErrors().nome"
+                [value]="formData().nome"
+                (input)="updateNome($event)"
+                name="nome"
+                placeholder="Ex: Gás de Cozinha P13 - Troca"
+                required
+              >
+              @if (formErrors().nome) {
+                <span class="error-message">{{ formErrors().nome }}</span>
+              }
+            </div>
+
+            <div class="precos-section">
+              <h4 class="section-title">Preços por Forma de Pagamento</h4>
+              
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="credito">Crédito (R$) *</label>
+                  <input 
+                    type="number" 
+                    id="credito" 
+                    class="form-input"
+                    [class.error]="formErrors().credito"
+                    [value]="formData().precos.credito"
+                    (input)="updatePrecoCredito($event)"
+                    name="credito"
+                    placeholder="0.00"
+                    step="0.01"
+                    min="0"
+                    required
+                  >
+                  @if (formErrors().credito) {
+                    <span class="error-message">{{ formErrors().credito }}</span>
+                  }
+                </div>
+
+                <div class="form-group">
+                  <label for="debito">Débito (R$) *</label>
+                  <input 
+                    type="number" 
+                    id="debito" 
+                    class="form-input"
+                    [class.error]="formErrors().debito"
+                    [value]="formData().precos.debito"
+                    (input)="updatePrecoDebito($event)"
+                    name="debito"
+                    placeholder="0.00"
+                    step="0.01"
+                    min="0"
+                    required
+                  >
+                  @if (formErrors().debito) {
+                    <span class="error-message">{{ formErrors().debito }}</span>
+                  }
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="dinheiro">Dinheiro (R$) *</label>
+                  <input 
+                    type="number" 
+                    id="dinheiro" 
+                    class="form-input"
+                    [class.error]="formErrors().dinheiro"
+                    [value]="formData().precos.dinheiro"
+                    (input)="updatePrecoDinheiro($event)"
+                    name="dinheiro"
+                    placeholder="0.00"
+                    step="0.01"
+                    min="0"
+                    required
+                  >
+                  @if (formErrors().dinheiro) {
+                    <span class="error-message">{{ formErrors().dinheiro }}</span>
+                  }
+                </div>
+
+                <div class="form-group">
+                  <label for="pix">PIX (R$) *</label>
+                  <input 
+                    type="number" 
+                    id="pix" 
+                    class="form-input"
+                    [class.error]="formErrors().pix"
+                    [value]="formData().precos.pix"
+                    (input)="updatePrecoPix($event)"
+                    name="pix"
+                    placeholder="0.00"
+                    step="0.01"
+                    min="0"
+                    required
+                  >
+                  @if (formErrors().pix) {
+                    <span class="error-message">{{ formErrors().pix }}</span>
+                  }
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="quantidade">Quantidade em Estoque *</label>
+              <input 
+                type="number" 
+                id="quantidade" 
+                class="form-input"
+                [class.error]="formErrors().quantidadeEstoque"
+                [value]="formData().quantidadeEstoque"
+                (input)="updateQuantidade($event)"
+                name="quantidade"
+                placeholder="0"
+                min="0"
+                required
+              >
+              @if (formErrors().quantidadeEstoque) {
+                <span class="error-message">{{ formErrors().quantidadeEstoque }}</span>
+              }
+            </div>
+
+            <div class="modal-actions">
+              <button type="button" class="btn-secondary" (click)="closeModal()">
+                Cancelar
+              </button>
+              <button type="submit" class="btn-primary">
+                {{ modalType() === 'create' ? 'Cadastrar' : 'Salvar' }}
+              </button>
+            </div>
+          </form>
+        }
+
+        <!-- Modal de Exclusão -->
+        @if (modalType() === 'delete' && selectedProduto()) {
+          <div class="modal-header">
+            <h2 class="modal-title">Excluir Produto</h2>
+            <button class="btn-close" (click)="closeModal()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="modal-body">
+            <div class="confirmation-icon delete">
+              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 6h18"/>
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+              </svg>
+            </div>
+            
+            <p class="confirmation-text">
+              Tem certeza que deseja excluir o produto 
+              <strong>{{ selectedProduto()!.nome }}</strong>?
+            </p>
+            
+            <p class="confirmation-warning">
+              Esta ação não poderá ser desfeita e o produto será removido permanentemente do catálogo.
+            </p>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn-secondary" (click)="closeModal()">
+              Cancelar
+            </button>
+            <button type="button" class="btn-danger" (click)="confirmDelete()">
+              Excluir Produto
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>
