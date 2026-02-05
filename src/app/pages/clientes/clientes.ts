@@ -6,7 +6,7 @@ import { EnderecoService } from '../../services/endereco.service';
 import { Cliente, ClienteFormData, HistoricoCompra } from '../../models/cliente.model';
 import { Endereco } from '../../models/endereco.model';
 
-type ModalType = 'create' | 'edit' | 'delete' | 'view' | null;
+type ModalType = 'create' | 'edit' | 'delete' | 'view' | 'historico' | null;
 type SortOrder = 'nome-asc' | 'nome-desc' | 'recentes' | 'antigos' | 'sem-compras' | 'nenhum';
 
 @Component({
@@ -51,6 +51,12 @@ export class Clientes {
   private enderecoSearchDebounceTimer: any = null;
   readonly MAX_DISPLAY_ITEMS = 50; // Limite de itens exibidos para performance
 
+  // Modal de histórico
+  historicoPage = signal(1);
+  historicoItemsPerPage = signal(5);
+  historicoDataInicio = signal<string>('');
+  historicoDataFim = signal<string>('');
+
   // Computed
   clientes = this.clienteService.getClientes();
   enderecos = this.enderecoService.getEnderecos();
@@ -83,6 +89,52 @@ export class Clientes {
       totalFiltered: filteredNotSelected.length,
       hasMore: filteredNotSelected.length > limitedNotSelected.length
     };
+  });
+
+  // Histórico filtrado por data
+  filteredHistorico = computed(() => {
+    const cliente = this.selectedCliente();
+    if (!cliente) return [];
+    
+    let historico = this.clienteService.getHistoricoCompras(cliente.id);
+    
+    const dataInicio = this.historicoDataInicio();
+    const dataFim = this.historicoDataFim();
+    
+    if (dataInicio) {
+      const inicio = new Date(dataInicio);
+      inicio.setHours(0, 0, 0, 0);
+      historico = historico.filter(h => new Date(h.dataCompra) >= inicio);
+    }
+    
+    if (dataFim) {
+      const fim = new Date(dataFim);
+      fim.setHours(23, 59, 59, 999);
+      historico = historico.filter(h => new Date(h.dataCompra) <= fim);
+    }
+    
+    return historico;
+  });
+
+  // Paginação do histórico
+  historicoTotalPages = computed(() => 
+    Math.ceil(this.filteredHistorico().length / this.historicoItemsPerPage())
+  );
+
+  paginatedHistorico = computed(() => {
+    const start = (this.historicoPage() - 1) * this.historicoItemsPerPage();
+    const end = start + this.historicoItemsPerPage();
+    return this.filteredHistorico().slice(start, end);
+  });
+
+  historicoPages = computed(() => {
+    const total = this.historicoTotalPages();
+    return Array.from({ length: total }, (_, i) => i + 1);
+  });
+
+  // Total gasto no período filtrado
+  totalGastoFiltrado = computed(() => {
+    return this.filteredHistorico().reduce((acc, h) => acc + h.valorTotal, 0);
   });
 
   filteredClientes = computed(() => {
@@ -172,6 +224,17 @@ export class Clientes {
     this.modalType.set('view');
   }
 
+  openHistoricoModal() {
+    this.historicoPage.set(1);
+    this.historicoDataInicio.set('');
+    this.historicoDataFim.set('');
+    this.modalType.set('historico');
+  }
+
+  voltarParaDetalhes() {
+    this.modalType.set('view');
+  }
+
   closeModal() {
     this.modalType.set(null);
     this.selectedCliente.set(null);
@@ -243,6 +306,44 @@ export class Clientes {
 
   clearEnderecoSearch() {
     this.enderecoSearchTerm.set('');
+  }
+
+  // ===== HISTÓRICO - FILTROS E PAGINAÇÃO =====
+
+  updateHistoricoDataInicio(event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.historicoDataInicio.set(input.value);
+    this.historicoPage.set(1);
+  }
+
+  updateHistoricoDataFim(event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.historicoDataFim.set(input.value);
+    this.historicoPage.set(1);
+  }
+
+  clearHistoricoFiltros() {
+    this.historicoDataInicio.set('');
+    this.historicoDataFim.set('');
+    this.historicoPage.set(1);
+  }
+
+  goToHistoricoPage(page: number) {
+    if (page >= 1 && page <= this.historicoTotalPages()) {
+      this.historicoPage.set(page);
+    }
+  }
+
+  previousHistoricoPage() {
+    if (this.historicoPage() > 1) {
+      this.historicoPage.update(p => p - 1);
+    }
+  }
+
+  nextHistoricoPage() {
+    if (this.historicoPage() < this.historicoTotalPages()) {
+      this.historicoPage.update(p => p + 1);
+    }
   }
 
   // ===== AÇÕES CRUD =====
