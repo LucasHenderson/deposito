@@ -72,7 +72,7 @@ export class Vendas {
   filterEntregador = signal<string>('');
   filterStatus = signal<StatusVenda | ''>('');
   filterDataInicio = signal<string>(this.getDataAtualFormatada());
-  filterDataFim = signal<string>(this.getDataAtualFormatada());
+  filterDataFim = signal<string>('');
 
   // Computed
   vendas = this.vendaService.getVendas();

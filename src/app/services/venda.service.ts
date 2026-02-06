@@ -3,6 +3,9 @@ import { Venda, VendaFormData, StatusVenda } from '../models/venda.model';
 import { ClienteService } from './cliente.service';
 import { EnderecoService } from './endereco.service';
 import { EntregadorService } from './entregador.service';
+import { ProdutoService } from './produto.service';
+import { VariavelEstoqueService } from './variavel-estoque.service';
+import { HistoricoCompra } from '../models/cliente.model';
 
 @Injectable({
   providedIn: 'root'
@@ -11,6 +14,8 @@ export class VendaService {
   private clienteService = inject(ClienteService);
   private enderecoService = inject(EnderecoService);
   private entregadorService = inject(EntregadorService);
+  private produtoService = inject(ProdutoService);
+  private variavelEstoqueService = inject(VariavelEstoqueService);
 
   private vendas = signal<Venda[]>([
     {
@@ -205,13 +210,36 @@ export class VendaService {
     return this.vendas().length;
   }
 
-  createVenda(data: VendaFormData): Venda {
+  // ===== MÉTODO MODIFICADO: Integração completa ao criar venda =====
+  createVenda(data: VendaFormData): Venda | null {
     const cliente = this.clienteService.getClienteById(data.clienteId);
     const endereco = this.enderecoService.getEnderecoById(data.enderecoId);
     const entregador = this.entregadorService.getEntregadores()().find(e => e.id === data.entregadorId);
 
+    // Verifica se tem estoque suficiente ANTES de criar a venda
+    for (const item of data.itens) {
+      const produto = this.produtoService.getProdutos()().find(p => p.id === item.produtoId);
+      if (!produto) {
+        console.error(`Produto ${item.produtoId} não encontrado`);
+        return null;
+      }
+
+      // Verifica os vínculos do produto com variáveis de estoque
+      for (const vinculo of produto.vinculos) {
+        if (vinculo.tipoInteracao === 'reduz') {
+          const variavel = this.variavelEstoqueService.getVariavelById(vinculo.variavelEstoqueId);
+          if (!variavel || variavel.quantidade < item.quantidade) {
+            console.error(`Estoque insuficiente para ${variavel?.nome || 'variável desconhecida'}`);
+            return null;
+          }
+        }
+      }
+    }
+
+    // Cria a venda
+    const vendaId = this.generateId();
     const newVenda: Venda = {
-      id: this.generateId(),
+      id: vendaId,
       clienteId: data.clienteId,
       clienteNome: cliente?.nome || '',
       clienteTelefone: cliente?.telefone || '',
@@ -228,14 +256,122 @@ export class VendaService {
       observacoes: data.observacoes
     };
 
+    // Processa cada item da venda
+    for (const item of data.itens) {
+      const produto = this.produtoService.getProdutos()().find(p => p.id === item.produtoId);
+      if (!produto) continue;
+
+      // 1. REDUZ ESTOQUE das variáveis vinculadas ao produto
+      for (const vinculo of produto.vinculos) {
+        if (vinculo.tipoInteracao === 'reduz') {
+          this.variavelEstoqueService.reduzirEstoque(
+            vinculo.variavelEstoqueId, 
+            item.quantidade
+          );
+        }
+        // 'nao-altera' não faz nada
+      }
+
+      // 2. REGISTRA VENDA NO PRODUTO (para contadores e estatísticas)
+      // Passa vendaId para permitir rastreamento e remoção posterior
+      const formaPagamentoPrincipal = data.pagamentos[0]?.forma || 'dinheiro';
+      this.produtoService.registrarVenda(
+        item.produtoId,
+        item.quantidade,
+        formaPagamentoPrincipal as any,
+        item.subtotal,
+        vendaId  // Passa o vendaId para rastreamento
+      );
+
+      // 3. ADICIONA AO HISTÓRICO DO CLIENTE
+      // Usa vendaId como prefixo no ID da compra para permitir remoção
+      const historicoCompra: HistoricoCompra = {
+        id: `${vendaId}_item_${item.produtoId}`,
+        clienteId: data.clienteId,
+        produtoNome: item.produtoNome,
+        quantidade: item.quantidade,
+        valorTotal: item.subtotal,
+        formaPagamento: formaPagamentoPrincipal as any,
+        dataCompra: new Date(),
+        enderecoEntrega: newVenda.enderecoFormatado
+      };
+      this.clienteService.adicionarCompra(historicoCompra);
+    }
+
+    // Adiciona a venda à lista
     this.vendas.update(list => [...list, newVenda]);
+    
+    console.log(`✅ Venda criada com sucesso! Estoque, histórico e contadores atualizados.`);
     return newVenda;
   }
+  // ==================================================================
 
+  // ===== MÉTODO MODIFICADO: Atualiza venda e ajusta todas as alterações =====
   updateVenda(id: string, data: Partial<VendaFormData>): boolean {
-    const venda = this.vendas().find(v => v.id === id);
-    if (!venda) return false;
+    const vendaOriginal = this.vendas().find(v => v.id === id);
+    if (!vendaOriginal) return false;
 
+    // Se os ITENS foram alterados, precisa reverter e reaplicar
+    if (data.itens && data.itens.length > 0) {
+      // 1. REVERTE as alterações dos itens originais (APENAS ESTOQUE)
+      for (const itemOriginal of vendaOriginal.itens) {
+        const produto = this.produtoService.getProdutos()().find(p => p.id === itemOriginal.produtoId);
+        if (!produto) continue;
+
+        // Reverte APENAS o estoque (não mexe nos contadores de vendas)
+        for (const vinculo of produto.vinculos) {
+          if (vinculo.tipoInteracao === 'reduz') {
+            this.variavelEstoqueService.aumentarEstoque(
+              vinculo.variavelEstoqueId, 
+              itemOriginal.quantidade
+            );
+          }
+        }
+      }
+
+      // Remove histórico relacionado à venda original
+      this.clienteService.removerComprasPorVenda(id);
+
+      // 2. APLICA as novas alterações (APENAS ESTOQUE E HISTÓRICO)
+      for (const novoItem of data.itens) {
+        const produto = this.produtoService.getProdutos()().find(p => p.id === novoItem.produtoId);
+        if (!produto) continue;
+
+        // Aplica novo estoque
+        for (const vinculo of produto.vinculos) {
+          if (vinculo.tipoInteracao === 'reduz') {
+            this.variavelEstoqueService.reduzirEstoque(
+              vinculo.variavelEstoqueId, 
+              novoItem.quantidade
+            );
+          }
+        }
+
+        // Adiciona ao histórico do cliente com valores atualizados
+        const clienteId = data.clienteId || vendaOriginal.clienteId;
+        const endereco = data.enderecoId 
+          ? this.enderecoService.getEnderecoById(data.enderecoId)
+          : this.enderecoService.getEnderecoById(vendaOriginal.enderecoId);
+        
+        const formaPagamentoPrincipal = data.pagamentos?.[0]?.forma || vendaOriginal.pagamentos[0]?.forma || 'dinheiro';
+        
+        const historicoCompra: HistoricoCompra = {
+          id: `${id}_item_${novoItem.produtoId}`,
+          clienteId: clienteId,
+          produtoNome: novoItem.produtoNome,
+          quantidade: novoItem.quantidade,
+          valorTotal: novoItem.subtotal,
+          formaPagamento: formaPagamentoPrincipal as any,
+          dataCompra: vendaOriginal.dataVenda, // Mantém a data original da venda
+          enderecoEntrega: endereco ? this.enderecoService.getEnderecoFormatado(endereco) : vendaOriginal.enderecoFormatado
+        };
+        this.clienteService.adicionarCompra(historicoCompra);
+      }
+
+      console.log(`✅ Venda ${id} atualizada. Estoque e histórico ajustados (contadores de vendas mantidos).`);
+    }
+
+    // Atualiza os dados da venda
     const cliente = data.clienteId ? this.clienteService.getClienteById(data.clienteId) : undefined;
     const endereco = data.enderecoId ? this.enderecoService.getEnderecoById(data.enderecoId) : undefined;
     const entregador = data.entregadorId ? this.entregadorService.getEntregadores()().find(e => e.id === data.entregadorId) : undefined;
@@ -269,21 +405,109 @@ export class VendaService {
     );
     return true;
   }
+  // ========================================================================
 
-  updateStatus(id: string, status: StatusVenda): void {
+  // ===== MÉTODO MODIFICADO: Deleta venda e reverte todas as alterações =====
+  deleteVenda(id: string): boolean {
+    const venda = this.vendas().find(v => v.id === id);
+    if (!venda) return false;
+
+    // REVERTE todas as operações para cada item da venda
+    for (const item of venda.itens) {
+      const produto = this.produtoService.getProdutos()().find(p => p.id === item.produtoId);
+      if (!produto) continue;
+
+      // 1. REVERTE O ESTOQUE - Devolve ao estoque
+      for (const vinculo of produto.vinculos) {
+        if (vinculo.tipoInteracao === 'reduz') {
+          // Se tinha reduzido, agora aumenta de volta
+          this.variavelEstoqueService.aumentarEstoque(
+            vinculo.variavelEstoqueId, 
+            item.quantidade
+          );
+        }
+        // 'nao-altera' não precisa reverter nada
+      }
+    }
+
+    // 2. REMOVE VENDAS REGISTRADAS DO PRODUTO
+    // Remove todos os registros de vendas que começam com o ID da venda
+    const removidos = this.produtoService.removerVendasPorPrefixo(venda.id);
+    console.log(`   - Removidos ${removidos} registros de vendas dos produtos`);
+
+    // 3. REMOVE DO HISTÓRICO DO CLIENTE
+    this.clienteService.removerComprasPorVenda(venda.id);
+
+    // 4. Remove a venda da lista
+    this.vendas.update(list => list.filter(v => v.id !== id));
+    
+    console.log(`✅ Venda ${id} excluída. Estoque, histórico e contadores revertidos.`);
+    return true;
+  }
+  // ========================================================================
+
+  updateStatus(id: string, status: StatusVenda): boolean {
+    const venda = this.vendas().find(v => v.id === id);
+    if (!venda) return false;
+
     this.vendas.update(list =>
       list.map(v => v.id === id ? { ...v, status } : v)
     );
+    return true;
   }
 
-  toggleRecebimentoPendente(id: string): void {
+  updateRecebimentoPendente(id: string, pendente: boolean): boolean {
+    const venda = this.vendas().find(v => v.id === id);
+    if (!venda) return false;
+
+    this.vendas.update(list =>
+      list.map(v => v.id === id ? { ...v, recebimentoPendente: pendente } : v)
+    );
+    return true;
+  }
+
+  // Método auxiliar para alternar o status de recebimento pendente
+  toggleRecebimentoPendente(id: string): boolean {
+    const venda = this.vendas().find(v => v.id === id);
+    if (!venda) return false;
+
     this.vendas.update(list =>
       list.map(v => v.id === id ? { ...v, recebimentoPendente: !v.recebimentoPendente } : v)
     );
+    return true;
   }
 
-  deleteVenda(id: string): void {
-    this.vendas.update(list => list.filter(v => v.id !== id));
+  // Estatísticas
+  getTotalVendasHoje(): number {
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    
+    return this.vendas().filter(v => {
+      const dataVenda = new Date(v.dataVenda);
+      dataVenda.setHours(0, 0, 0, 0);
+      return dataVenda.getTime() === hoje.getTime();
+    }).length;
+  }
+
+  getValorTotalVendasHoje(): number {
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    
+    return this.vendas()
+      .filter(v => {
+        const dataVenda = new Date(v.dataVenda);
+        dataVenda.setHours(0, 0, 0, 0);
+        return dataVenda.getTime() === hoje.getTime();
+      })
+      .reduce((total, venda) => total + venda.valorTotal, 0);
+  }
+
+  getVendasPorStatus(status: StatusVenda): Venda[] {
+    return this.vendas().filter(v => v.status === status);
+  }
+
+  getVendasComRecebimentoPendente(): Venda[] {
+    return this.vendas().filter(v => v.recebimentoPendente);
   }
 
   private generateId(): string {

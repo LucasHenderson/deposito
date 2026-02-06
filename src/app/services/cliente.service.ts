@@ -169,6 +169,26 @@ export class ClienteService {
     });
   }
 
+  // ===== MÉTODOS DE HISTÓRICO =====
+  adicionarCompra(compra: HistoricoCompra): void {
+    this.historicoCompras.update(list => [...list, compra]);
+  }
+
+  // Remove compras associadas a uma venda específica
+  removerComprasPorVenda(vendaId: string): void {
+    this.historicoCompras.update(list => 
+      list.filter(h => !h.id.startsWith(vendaId))
+    );
+  }
+
+  // Remove uma compra específica do histórico
+  removerCompra(compraId: string): void {
+    this.historicoCompras.update(list => 
+      list.filter(h => h.id !== compraId)
+    );
+  }
+  // ====================================
+
   createCliente(data: ClienteFormData): Cliente {
     const newCliente: Cliente = {
       id: this.generateId(),

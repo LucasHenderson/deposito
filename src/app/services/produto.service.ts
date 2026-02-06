@@ -171,24 +171,63 @@ export class ProdutoService {
     this.produtos.update(list => list.filter(p => p.id !== id));
   }
 
-  // Registra uma venda (será chamado pela página de vendas)
-  registrarVenda(produtoId: string, quantidade: number, formaPagamento: keyof PrecoPorPagamento): string {
+  // ===== MÉTODO ATUALIZADO: Registra uma venda com ID rastreável =====
+  registrarVenda(
+    produtoId: string, 
+    quantidade: number, 
+    formaPagamento: keyof PrecoPorPagamento, 
+    valorTotal?: number,
+    vendaId?: string  // Novo parâmetro para rastreamento
+  ): string {
     const produto = this.produtos().find(p => p.id === produtoId);
     if (!produto) return '';
 
-    const valorTotal = produto.precos[formaPagamento] * quantidade;
+    // Se valorTotal não foi fornecido, calcula usando o preço do produto
+    const valor = valorTotal !== undefined 
+      ? valorTotal 
+      : produto.precos[formaPagamento] * quantidade;
+
+    // Gera ID: se vendaId fornecido, usa como prefixo para permitir rastreamento
+    const registroId = vendaId 
+      ? `${vendaId}_reg_${produtoId}_${Date.now()}`
+      : this.generateId();
+
     const novaVenda: RegistroVenda = {
-      id: this.generateId(),
+      id: registroId,
       produtoId,
       quantidade,
       dataVenda: new Date(),
       formaPagamento: formaPagamento,
-      valorTotal
+      valorTotal: valor
     };
 
     this.vendas.update(list => [...list, novaVenda]);
     return novaVenda.id;
   }
+
+  // Remove uma venda registrada (usado ao excluir venda)
+  removerVenda(vendaId: string): boolean {
+    const vendaExiste = this.vendas().some(v => v.id === vendaId);
+    if (!vendaExiste) return false;
+
+    this.vendas.update(list => list.filter(v => v.id !== vendaId));
+    return true;
+  }
+
+  // Remove todas as vendas registradas relacionadas a uma venda específica
+  removerVendasPorPrefixo(prefixo: string): number {
+    let removidos = 0;
+    this.vendas.update(list => {
+      const novaLista = list.filter(v => {
+        const shouldRemove = v.id.startsWith(prefixo);
+        if (shouldRemove) removidos++;
+        return !shouldRemove;
+      });
+      return novaLista;
+    });
+    return removidos;
+  }
+  // ==========================================================================
 
   private generateId(): string {
     return Date.now().toString() + Math.random().toString(36).substr(2, 9);
