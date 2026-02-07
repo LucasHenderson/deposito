@@ -1966,6 +1966,525 @@
   background: #95a5a6;
 }
 
+/* ============================================
+   MODAL EXCLUIR - MELHORADO
+   ============================================ */
+
+.modal-delete-improved {
+  max-width: 520px;
+  width: 95%;
+  min-height: auto;
+}
+
+.modal-header-delete {
+  border-bottom-color: rgba(220, 53, 69, 0.2);
+}
+
+.badge-danger {
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%) !important;
+}
+
+.modal-delete-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 32px 24px !important;
+  padding-bottom: 24px !important;
+  gap: 16px;
+}
+
+.delete-warning-icon {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: rgba(220, 53, 69, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #dc3545;
+  animation: pulse-warning 2s ease-in-out infinite;
+}
+
+@keyframes pulse-warning {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.2); }
+  50% { transform: scale(1.05); box-shadow: 0 0 0 12px rgba(220, 53, 69, 0); }
+}
+
+.delete-title-text {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-color);
+  margin: 0;
+}
+
+.delete-subtitle-text {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.delete-info-card {
+  width: 100%;
+  background: var(--bg-secondary, var(--dropdown-hover));
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 4px 0;
+  text-align: left;
+}
+
+.delete-info-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+}
+
+.delete-info-icon {
+  font-size: 20px;
+  line-height: 1;
+  width: 32px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.delete-info-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.delete-info-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.delete-info-value {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.valor-destaque-delete {
+  color: #dc3545 !important;
+  font-size: 17px !important;
+}
+
+.delete-info-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 0 20px;
+}
+
+.delete-warning-banner {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: rgba(220, 53, 69, 0.08);
+  border: 1px solid rgba(220, 53, 69, 0.2);
+  border-radius: 8px;
+  color: #dc3545;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.btn-delete-confirm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  border: none;
+  color: white;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-delete-confirm:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+}
+
+/* ============================================
+   MODAL VISUALIZAR - MELHORADO
+   ============================================ */
+
+.modal-view-improved {
+  max-width: 750px;
+  width: 95%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Cards de detalhe dentro das seções */
+.detail-card-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 16px;
+  background: var(--bg-primary, var(--topbar-bg));
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.detail-card-item.full-width {
+  grid-column: 1 / -1;
+}
+
+.detail-card-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.detail-card-value {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+/* Lista de produtos no modal de visualização */
+.view-produtos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.view-produto-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  background: var(--bg-primary, var(--topbar-bg));
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.view-produto-card:hover {
+  border-color: var(--primary, var(--primary-color));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.view-produto-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.view-produto-nome {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text-color);
+}
+
+.view-produto-qtd {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.view-produto-subtotal {
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--primary, var(--primary-color));
+}
+
+/* Lista de pagamentos no modal de visualização */
+.view-pagamentos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.view-pagamento-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  background: var(--bg-primary, var(--topbar-bg));
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.view-pagamento-forma {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-color);
+  padding: 4px 12px;
+  background: var(--primary, var(--primary-color));
+  color: white;
+  border-radius: 6px;
+}
+
+.view-pagamento-valor {
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--text-color);
+}
+
+/* Observações */
+.view-observacoes-text {
+  font-size: 15px;
+  color: var(--text-color);
+  line-height: 1.6;
+  padding: 14px 16px;
+  background: var(--bg-primary, var(--topbar-bg));
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  margin: 0;
+}
+
+/* ============================================
+   MODAL CRIAR - MELHORADO
+   ============================================ */
+
+.modal-create-improved {
+  max-width: 900px;
+  width: 95%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Steps melhorados */
+.modal-steps-improved {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--topbar-bg);
+  gap: 0;
+}
+
+.step-improved {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  opacity: 0.4;
+  transition: all 0.3s ease;
+}
+
+.step-improved.active,
+.step-improved.completed {
+  opacity: 1;
+}
+
+.step-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--dropdown-hover);
+  border: 2px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text-secondary);
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.step-improved.active .step-circle {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+  box-shadow: 0 0 0 4px rgba(27, 123, 79, 0.15);
+}
+
+.step-improved.completed .step-circle {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+}
+
+.step-improved-label {
+  font-weight: 600;
+  color: var(--text-color);
+  font-size: 14px;
+}
+
+.step-connector {
+  width: 60px;
+  height: 2px;
+  background: var(--border-color);
+  margin: 0 16px;
+  transition: all 0.3s ease;
+  border-radius: 2px;
+}
+
+.step-connector.completed {
+  background: var(--primary-color);
+}
+
+/* Badge de Nova Venda */
+.badge-new {
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%) !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Empty state melhorado */
+.empty-state-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  text-align: center;
+  color: var(--text-secondary);
+  border: 2px dashed var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-primary, var(--topbar-bg));
+}
+
+.empty-state-card svg {
+  opacity: 0.4;
+  margin-bottom: 12px;
+}
+
+.empty-state-card p {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.empty-state-hint {
+  font-size: 13px;
+  color: var(--text-secondary);
+  opacity: 0.7;
+  margin-top: 4px;
+}
+
+/* Resumo da venda melhorado (step 3) */
+.resumo-venda-improved {
+  background: var(--bg-secondary, var(--dropdown-hover));
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 24px;
+}
+
+.resumo-venda-improved .section-header {
+  margin-bottom: 16px;
+}
+
+.resumo-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.resumo-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.resumo-row:last-of-type {
+  border-bottom: none;
+}
+
+.resumo-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  min-width: 130px;
+  flex-shrink: 0;
+}
+
+.resumo-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-color);
+  word-break: break-word;
+}
+
+.resumo-pagamentos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.resumo-pagamento-tag {
+  display: inline-block;
+  padding: 4px 10px;
+  background: var(--primary, var(--primary-color));
+  color: white;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.resumo-pagamento-tag.restante {
+  background: #f39c12;
+}
+
+.resumo-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+  border-radius: 8px;
+  margin-top: 12px;
+}
+
+.resumo-total-label {
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+}
+
+.resumo-total-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: white;
+}
+
+/* Pagamentos no step 1 */
+.pagamentos-list-view {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.pagamento-badge-forma {
+  display: inline-block;
+  padding: 4px 12px;
+  background: var(--primary, var(--primary-color));
+  color: white;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.pagamento-valor-item {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text-color);
+}
+
 /* ===== RESPONSIVIDADE ===== */
 
 @media (max-width: 1200px) {
@@ -2040,6 +2559,60 @@
   .pagamento-edit-inputs {
     flex-direction: column;
     align-items: stretch;
+  }
+
+    .modal-view-improved,
+  .modal-create-improved {
+    max-width: 100%;
+    width: 100%;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .modal-delete-improved {
+    max-width: 100%;
+    width: 100%;
+    min-height: auto;
+  }
+
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .view-produto-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .view-pagamento-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .resumo-row {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .resumo-label {
+    min-width: auto;
+  }
+
+  .resumo-total {
+    flex-direction: column;
+    gap: 4px;
+    text-align: center;
+  }
+
+  .resumo-total-value {
+    font-size: 20px;
+  }
+
+  .delete-info-row {
+    padding: 12px 16px;
   }
 }
 
@@ -2318,6 +2891,70 @@
     padding: 6px 10px;
     font-size: 13px;
   }
+
+    .modal-steps-improved {
+    padding: 16px 12px;
+    overflow-x: auto;
+    justify-content: flex-start;
+  }
+
+  .step-improved-label {
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .step-circle {
+    width: 30px;
+    height: 30px;
+    font-size: 12px;
+  }
+
+  .step-connector {
+    width: 40px;
+    margin: 0 8px;
+  }
+
+  .delete-warning-icon {
+    width: 72px;
+    height: 72px;
+  }
+
+  .delete-warning-icon svg {
+    width: 40px;
+    height: 40px;
+  }
+
+  .delete-title-text {
+    font-size: 16px;
+  }
+
+  .delete-subtitle-text {
+    font-size: 13px;
+  }
+
+  .total-section {
+    flex-direction: column;
+    text-align: center;
+    gap: 4px;
+  }
+
+  .total-value-large {
+    font-size: 20px;
+  }
+
+  .btn-delete-confirm {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .btn-cancel {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
 }
 
 /* ===== CORREÇÃO ESPECÍFICA PARA DROPDOWN DOS SELECTS ===== */
@@ -2407,5 +3044,3 @@ select.form-input {
     text-overflow: ellipsis;
   }
 }
-
-/* ===== FIM DAS CORREÇÕES ===== */
