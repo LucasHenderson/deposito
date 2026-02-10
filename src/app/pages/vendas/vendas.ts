@@ -70,10 +70,11 @@ export class Vendas {
     observacoes: ''
   });
 
-  // Busca e filtros
+// Busca e filtros
   searchTerm = signal('');
   filterEntregador = signal<string>('');
   filterStatus = signal<StatusVenda | ''>('');
+  filterRecebimentoPendente = signal<string>(''); // NOVO: filtro de recebimento pendente
   filterDataInicio = signal<string>(this.getDataAtualFormatada());
   filterDataFim = signal<string>('');
 
@@ -168,9 +169,18 @@ export class Vendas {
       list = list.filter(v => v.entregadorId === this.filterEntregador());
     }
     
-    // Filtro por status
+// Filtro por status
     if (this.filterStatus()) {
       list = list.filter(v => v.status === this.filterStatus());
+    }
+
+    // NOVO: Filtro por recebimento pendente
+    if (this.filterRecebimentoPendente()) {
+      if (this.filterRecebimentoPendente() === 'pendente') {
+        list = list.filter(v => v.recebimentoPendente === true);
+      } else if (this.filterRecebimentoPendente() === 'recebido') {
+        list = list.filter(v => v.recebimentoPendente === false);
+      }
     }
     
     // Filtro por data
@@ -288,9 +298,16 @@ export class Vendas {
     this.currentPage.set(1);
   }
 
-  updateFilterStatus(event: Event) {
+updateFilterStatus(event: Event) {
     const select = event.target as HTMLSelectElement;
     this.filterStatus.set(select.value as StatusVenda | '');
+    this.currentPage.set(1);
+  }
+
+  // NOVO: Atualizar filtro de recebimento pendente
+  updateFilterRecebimentoPendente(event: Event) {
+    const select = event.target as HTMLSelectElement;
+    this.filterRecebimentoPendente.set(select.value);
     this.currentPage.set(1);
   }
 
@@ -306,10 +323,11 @@ export class Vendas {
     this.currentPage.set(1);
   }
 
-  limparFiltros() {
+limparFiltros() {
     this.searchTerm.set('');
     this.filterEntregador.set('');
     this.filterStatus.set('');
+    this.filterRecebimentoPendente.set(''); // NOVO: limpar filtro recebimento pendente
     this.filterDataInicio.set(this.getDataAtualFormatada());
     this.filterDataFim.set('');
     this.currentPage.set(1);

@@ -53,13 +53,23 @@
           </select>
         </div>
 
-        <div class="filter-item">
+<div class="filter-item">
           <label>Status:</label>
           <select class="filter-select" [value]="filterStatus()" (change)="updateFilterStatus($event)">
             <option value="">Todos</option>
             <option value="a-entregar">A Entregar</option>
             <option value="entregando">Entregando</option>
             <option value="entregue">Entregue</option>
+          </select>
+        </div>
+
+        <!-- NOVO: Filtro de Recebimento Pendente -->
+        <div class="filter-item">
+          <label>Recebimento:</label>
+          <select class="filter-select" [value]="filterRecebimentoPendente()" (change)="updateFilterRecebimentoPendente($event)">
+            <option value="">Todos</option>
+            <option value="pendente">Pendente</option>
+            <option value="recebido">Recebido</option>
           </select>
         </div>
 
