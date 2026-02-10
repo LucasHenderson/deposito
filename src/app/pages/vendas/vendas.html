@@ -213,8 +213,9 @@
                     <button 
                       class="btn-action btn-pending"
                       [class.active]="venda.recebimentoPendente"
-                      (click)="marcarRecebimentoPendente(venda.id)"
-                      [title]="venda.recebimentoPendente ? 'Remover Recebimento Pendente' : 'Marcar Recebimento Pendente'"
+                      (click)="openTogglePendenteModal(venda)"
+                      [title]="venda.recebimentoPendente ? 
+                        'Remover Recebimento Pendente' : 'Marcar Recebimento Pendente'"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <line x1="12" y1="1" x2="12" y2="23"/>
@@ -1300,6 +1301,124 @@
           </svg>
           Excluir Venda
         </button>
+      </div>
+    </div>
+  </div>
+}
+<!-- ============================================================
+     NOVO: MODAL - CONFIRMAR RECEBIMENTO PENDENTE
+     ============================================================ -->
+@if (modalType() === 'toggle-pendente' && selectedVenda()) {
+  <div class="modal-overlay" (click)="closeModalBackdrop($event)">
+    <div class="modal-content modal-pendente-improved">
+      <div class="modal-header" [class.modal-header-marcar]="!selectedVenda()!.recebimentoPendente" [class.modal-header-remover]="selectedVenda()!.recebimentoPendente">
+        <div class="modal-header-content">
+          <h2>{{ selectedVenda()!.recebimentoPendente ? 'Remover Recebimento Pendente' : 'Marcar Recebimento Pendente' }}</h2>
+          <span class="venda-id-badge" [class.badge-warning]="!selectedVenda()!.recebimentoPendente" [class.badge-success]="selectedVenda()!.recebimentoPendente">
+            #{{ selectedVenda()!.id.substring(0, 8) }}
+          </span>
+        </div>
+        <button class="btn-close" (click)="closeModal()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body modal-pendente-body">
+        <!-- Ícone -->
+        <div class="pendente-modal-icon" [class.icon-marcar]="!selectedVenda()!.recebimentoPendente" [class.icon-remover]="selectedVenda()!.recebimentoPendente">
+          @if (!selectedVenda()!.recebimentoPendente) {
+            <!-- Ícone de cifrão (marcar como pendente) -->
+            <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="1" x2="12" y2="23"/>
+              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+            </svg>
+          } @else {
+            <!-- Ícone de check (remover pendente = recebido) -->
+            <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          }
+        </div>
+
+        @if (!selectedVenda()!.recebimentoPendente) {
+          <p class="pendente-title-text">Marcar esta venda como recebimento pendente?</p>
+          <p class="pendente-subtitle-text">A venda será sinalizada indicando que o pagamento ainda não foi recebido.</p>
+        } @else {
+          <p class="pendente-title-text">Remover o recebimento pendente desta venda?</p>
+          <p class="pendente-subtitle-text">O pagamento será marcado como recebido e a sinalização será removida.</p>
+        }
+
+        <!-- Card com informações da venda -->
+        <div class="delete-info-card">
+          <div class="delete-info-row">
+            <div class="delete-info-icon">👤</div>
+            <div class="delete-info-content">
+              <span class="delete-info-label">Cliente</span>
+              <span class="delete-info-value">{{ selectedVenda()!.clienteNome }}</span>
+            </div>
+          </div>
+          <div class="delete-info-divider"></div>
+          <div class="delete-info-row">
+            <div class="delete-info-icon">💰</div>
+            <div class="delete-info-content">
+              <span class="delete-info-label">Valor Total</span>
+              <span class="delete-info-value" [class.valor-destaque-warning]="!selectedVenda()!.recebimentoPendente" [class.valor-destaque-success]="selectedVenda()!.recebimentoPendente">
+                {{ formatarMoeda(selectedVenda()!.valorTotal) }}
+              </span>
+            </div>
+          </div>
+          <div class="delete-info-divider"></div>
+          <div class="delete-info-row">
+            <div class="delete-info-icon">📅</div>
+            <div class="delete-info-content">
+              <span class="delete-info-label">Data da Venda</span>
+              <span class="delete-info-value">{{ formatarData(selectedVenda()!.dataVenda) }}</span>
+            </div>
+          </div>
+          <div class="delete-info-divider"></div>
+          <div class="delete-info-row">
+            <div class="delete-info-icon">🚚</div>
+            <div class="delete-info-content">
+              <span class="delete-info-label">Entregador</span>
+              <span class="delete-info-value">{{ selectedVenda()!.entregadorIdentificador }}</span>
+            </div>
+          </div>
+          <div class="delete-info-divider"></div>
+          <div class="delete-info-row">
+            <div class="delete-info-icon">📋</div>
+            <div class="delete-info-content">
+              <span class="delete-info-label">Status Atual</span>
+              <span class="delete-info-value">
+                {{ selectedVenda()!.recebimentoPendente ? '⚠️ Recebimento Pendente' : '✅ Recebido' }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer modal-edit-footer">
+        <button class="btn-cancel" (click)="closeModal()" type="button">
+          Cancelar
+        </button>
+        @if (!selectedVenda()!.recebimentoPendente) {
+          <button class="btn-pendente-confirm btn-warning-confirm" (click)="confirmarTogglePendente()" type="button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="1" x2="12" y2="23"/>
+              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+            </svg>
+            Marcar Pendente
+          </button>
+        } @else {
+          <button class="btn-pendente-confirm btn-success-confirm" (click)="confirmarTogglePendente()" type="button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            Confirmar Recebimento
+          </button>
+        }
       </div>
     </div>
   </div>

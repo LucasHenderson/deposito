@@ -31,10 +31,6 @@ export const routes: Routes = [
             loadComponent: () => import('./pages/vendas/vendas').then((m) => m.Vendas),
         },
         {
-            path: 'recebimentos-pendentes',
-            loadComponent: () => import('./pages/recebimentos-pendentes/recebimentos-pendentes').then((m) => m.RecebimentosPendentes),
-        },
-        {
             path: 'adiantamento-salarial',
             loadComponent: () => import('./pages/adiantamento-salarial/adiantamento-salarial').then((m) => m.AdiantamentoSalarial),
         },

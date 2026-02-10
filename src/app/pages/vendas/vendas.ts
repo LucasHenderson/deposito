@@ -12,7 +12,7 @@ import { Endereco } from '../../models/endereco.model';
 import { Entregador } from '../../models/entregador.model';
 import { Produto } from '../../models/produto.model';
 
-type ModalType = 'create' | 'edit' | 'delete' | 'view' | null;
+type ModalType = 'create' | 'edit' | 'delete' | 'view' | 'toggle-pendente' | null;
 type CreateStep = 1 | 2 | 3;
 
 @Component({
@@ -798,14 +798,30 @@ limparFiltros() {
     this.closeModal();
   }
 
-  // ===== AÇÕES NA LISTA =====
+// ===== AÇÕES NA LISTA =====
 
   updateStatus(vendaId: string, novoStatus: StatusVenda) {
     this.vendaService.updateStatus(vendaId, novoStatus);
   }
 
-  marcarRecebimentoPendente(vendaId: string) {
-    this.vendaService.toggleRecebimentoPendente(vendaId);
+  // ANTIGO: chamava direto o toggle sem confirmação
+  // marcarRecebimentoPendente(vendaId: string) {
+  //   this.vendaService.toggleRecebimentoPendente(vendaId);
+  // }
+
+  // NOVO: abre modal de confirmação para recebimento pendente
+  openTogglePendenteModal(venda: Venda) {
+    this.selectedVenda.set(venda);
+    this.modalType.set('toggle-pendente');
+  }
+
+  // NOVO: confirma a ação de toggle do recebimento pendente
+  confirmarTogglePendente() {
+    const venda = this.selectedVenda();
+    if (!venda) return;
+
+    this.vendaService.toggleRecebimentoPendente(venda.id);
+    this.closeModal();
   }
 
   // ===== FECHAR MODAL =====
