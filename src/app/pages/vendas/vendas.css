@@ -1407,6 +1407,7 @@
 
 /* Body com scroll */
 .modal-edit-body {
+  background-color: var(--body-bg);
   overflow-y: auto;
   flex: 1;
   padding: 24px;
@@ -2721,6 +2722,372 @@
   }
 }
 
+/* ============================================  
+   MODAL CRIAR VENDA — REDESIGN
+   ============================================ */
+
+/* ---- Header do modal criar ---- */
+.modal-header-create {
+  border-bottom-color: rgba(52, 152, 219, 0.2);
+}
+
+/* ---- Formulário de adicionar produto/pagamento ---- */
+.create-produto-form,
+.create-pagamento-form {
+  margin-bottom: 0;
+}
+
+.create-form-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.create-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.create-form-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.create-form-grow {
+  flex: 2;
+  min-width: 0;
+}
+
+.create-form-sm {
+  flex: 0 0 100px;
+}
+
+.create-form-md {
+  flex: 1;
+  min-width: 0;
+}
+
+.create-form-btn {
+  flex: 0 0 auto;
+}
+
+/* ---- Botão Adicionar (produto/pagamento) ---- */
+.btn-add-produto {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-add-produto:hover:not(:disabled) {
+  background: var(--primary-dark, #15633e);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(27, 123, 79, 0.3);
+}
+
+.btn-add-produto:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.btn-add-produto:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-add-pagamento-style {
+  background: #3498db;
+}
+
+.btn-add-pagamento-style:hover:not(:disabled) {
+  background: #2980b9;
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+}
+
+/* ---- Hint de seção ---- */
+.create-section-hint {
+  margin: 0 0 16px 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* ---- Lista de itens (cards) ---- */
+.create-itens-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.create-item-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  background: var(--bg-primary, var(--topbar-bg));
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  transition: border-color 0.2s ease;
+}
+
+.create-item-card:hover {
+  border-color: var(--primary-color);
+}
+
+.create-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.create-item-nome {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.create-item-detalhe {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.create-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.create-item-subtotal {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--primary-color);
+  white-space: nowrap;
+}
+
+/* ---- Botão remover item ---- */
+.btn-remove-item {
+  background: none;
+  border: 2px solid var(--border-color);
+  color: var(--text-secondary);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.btn-remove-item:hover {
+  background: #fee2e2;
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
+/* ---- Barra de total ---- */
+.create-total-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark, #15633e) 100%);
+  border-radius: 10px;
+  margin-top: 12px;
+}
+
+.create-total-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: white;
+}
+
+.create-total-valor {
+  font-size: 22px;
+  font-weight: 700;
+  color: white;
+}
+
+.create-total-pagamentos {
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+}
+
+/* ---- Pagamentos lista ---- */
+.create-pagamentos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.create-pagamento-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--bg-primary, var(--topbar-bg));
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+}
+
+.create-pagamento-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.create-pagamento-badge {
+  padding: 4px 12px;
+  background: var(--primary-color);
+  color: white;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.create-pagamento-valor {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text-color);
+}
+
+/* ---- Hint de pagamento padrão ---- */
+.create-pagamento-hint {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  background: rgba(52, 152, 219, 0.08);
+  border: 1px solid rgba(52, 152, 219, 0.2);
+  border-radius: 10px;
+  margin-top: 12px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.create-pagamento-hint svg {
+  flex-shrink: 0;
+  color: #3498db;
+}
+
+/* ---- Info restante ---- */
+.create-restante-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: rgba(243, 156, 18, 0.08);
+  border: 1px solid rgba(243, 156, 18, 0.2);
+  border-radius: 10px;
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--text-color);
+  line-height: 1.5;
+}
+
+.create-restante-info svg {
+  flex-shrink: 0;
+  color: #f39c12;
+}
+
+/* ---- Grid de entregadores (step 3) ---- */
+.create-entregador-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 12px;
+}
+
+.create-entregador-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  background: var(--bg-primary, var(--topbar-bg));
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.create-entregador-card:hover {
+  border-color: var(--primary-color);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+.create-entregador-card:active {
+  transform: translateY(0);
+}
+
+.create-entregador-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--primary-gradient, linear-gradient(135deg, var(--primary-color), var(--primary-dark, #15633e)));
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.create-entregador-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.create-entregador-id {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--primary-color);
+}
+
+.create-entregador-nome {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.create-entregador-arrow {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.create-entregador-card:hover .create-entregador-arrow {
+  color: var(--primary-color);
+  transform: translateX(3px);
+}
+
 /* ===== RESPONSIVIDADE ===== */
 
 @media (max-width: 1200px) {
@@ -3208,6 +3575,62 @@
     display: flex;
     align-items: center;
     gap: 6px;
+  }
+    .create-form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .create-form-group {
+    margin-bottom: 12px;
+    width: 100%;
+  }
+
+  .create-form-grow,
+  .create-form-sm,
+  .create-form-md,
+  .create-form-btn {
+    flex: 1 1 100%;
+  }
+
+  .btn-add-produto {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .create-item-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .create-item-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .create-total-bar {
+    flex-direction: column;
+    gap: 4px;
+    text-align: center;
+  }
+
+  .create-total-valor {
+    font-size: 20px;
+  }
+
+  .create-entregador-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .create-pagamento-card {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .create-pagamento-info {
+    flex-wrap: wrap;
+    gap: 8px;
   }
 }
 

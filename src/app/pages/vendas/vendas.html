@@ -290,12 +290,23 @@
     </div>
   </div>
 
-<!-- MODAL - CRIAR VENDA -->
+<!-- MODAL - CRIAR VENDA (REDESIGN) -->
 @if (modalType() === 'create') {
   <div class="modal-overlay" (click)="closeModalBackdrop($event)">
-    <div class="modal-content modal-large">
-      <div class="modal-header">
-        <h2>Nova Venda</h2>
+    <div class="modal-content modal-create-improved">
+
+      <!-- HEADER -->
+      <div class="modal-header modal-header-create">
+        <div class="modal-header-content">
+          <h2>Nova Venda</h2>
+          <span class="venda-id-badge badge-new">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Cadastro
+          </span>
+        </div>
         <button class="btn-close" (click)="closeModal()">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" y1="6" x2="6" y2="18"/>
@@ -304,44 +315,66 @@
         </button>
       </div>
 
-      <div class="modal-steps">
-        <div class="step" [class.active]="createStep() === 1" [class.completed]="createStep() > 1">
-          <span class="step-number">1</span>
-          <span class="step-label">Produtos</span>
+      <!-- STEPS MELHORADOS -->
+      <div class="modal-steps-improved">
+        <div class="step-improved" [class.active]="createStep() === 1" [class.completed]="createStep() > 1">
+          <span class="step-circle">
+            @if (createStep() > 1) {
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            } @else {
+              1
+            }
+          </span>
+          <span class="step-improved-label">Produtos</span>
         </div>
-        <div class="step-line" [class.completed]="createStep() > 1"></div>
-        <div class="step" [class.active]="createStep() === 2" [class.completed]="createStep() > 2">
-          <span class="step-number">2</span>
-          <span class="step-label">Cliente</span>
+        <div class="step-connector" [class.completed]="createStep() > 1"></div>
+        <div class="step-improved" [class.active]="createStep() === 2" [class.completed]="createStep() > 2">
+          <span class="step-circle">
+            @if (createStep() > 2) {
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            } @else {
+              2
+            }
+          </span>
+          <span class="step-improved-label">Cliente</span>
         </div>
-        <div class="step-line" [class.completed]="createStep() > 2"></div>
-        <div class="step" [class.active]="createStep() === 3">
-          <span class="step-number">3</span>
-          <span class="step-label">Entregador</span>
+        <div class="step-connector" [class.completed]="createStep() > 2"></div>
+        <div class="step-improved" [class.active]="createStep() === 3" [class.completed]="false">
+          <span class="step-circle">3</span>
+          <span class="step-improved-label">Entregador</span>
         </div>
       </div>
 
-      <div class="modal-body">
-        <!-- STEP 1: PRODUTOS E PAGAMENTOS -->
+      <!-- BODY -->
+      <div class="modal-edit-body">
+
+        <!-- ===================== STEP 1: PRODUTOS E PAGAMENTOS ===================== -->
         @if (createStep() === 1) {
-          <div class="step-content">
-            <div class="produtos-seletor">
+
+          <!-- SEÇÃO: ADICIONAR PRODUTO -->
+          <div class="edit-section">
+            <div class="section-header">
+              <div class="section-icon">🛒</div>
               <h3>Adicionar Produtos</h3>
-              <div class="form-row">
-                <div class="form-group flex-2">
+            </div>
+
+            <div class="create-produto-form">
+              <div class="create-form-row">
+                <div class="create-form-group create-form-grow">
                   <label>Produto</label>
                   <select class="form-input" [value]="produtoSelecionadoId()" (change)="updateProdutoSelecionado($event)">
                     <option value="">Selecione um produto</option>
                     @for (produto of produtos(); track produto.id) {
-                      <option [value]="produto.id">
-                        {{ produto.nome }} - Preços variáveis
-                      </option>
+                      <option [value]="produto.id">{{ produto.nome }}</option>
                     }
                   </select>
                 </div>
-
-                <div class="form-group">
-                  <label>Quantidade</label>
+                <div class="create-form-group create-form-sm">
+                  <label>Qtd.</label>
                   <input 
                     type="number" 
                     class="form-input"
@@ -350,93 +383,102 @@
                     (input)="updateQuantidadeProduto($event)"
                   />
                 </div>
-
-                <div class="form-group">
+                <div class="create-form-group create-form-md">
                   <label>Forma Pag.</label>
                   <select class="form-input" [value]="tempFormaPagamento()" (change)="updateFormaPagamento($event)">
-                    <option value="dinheiro">Dinheiro</option>
-                    <option value="pix">PIX</option>
-                    <option value="debito">Débito</option>
-                    <option value="credito">Crédito</option>
+                    <option value="dinheiro">💵 Dinheiro</option>
+                    <option value="pix">🔵 PIX</option>
+                    <option value="debito">💳 Débito</option>
+                    <option value="credito">💳 Crédito</option>
                   </select>
                 </div>
-
-                <div class="form-group">
+                <div class="create-form-group create-form-btn">
                   <label>&nbsp;</label>
                   <button 
-                    class="btn-secondary"
+                    class="btn-add-produto"
                     [disabled]="!produtoSelecionadoId()"
                     (click)="adicionarProduto()"
                   >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="12" y1="5" x2="12" y2="19"/>
+                      <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
                     Adicionar
                   </button>
                 </div>
               </div>
             </div>
+          </div>
 
-            <div class="itens-list">
+          <!-- SEÇÃO: ITENS DA VENDA -->
+          <div class="edit-section">
+            <div class="section-header">
+              <div class="section-icon">📦</div>
               <h3>Itens da Venda</h3>
-              @if (tempItens().length === 0) {
-                <p class="empty-message">Nenhum produto adicionado</p>
-              } @else {
-                <table class="itens-table">
-                  <thead>
-                    <tr>
-                      <th>Produto</th>
-                      <th>Quantidade</th>
-                      <th>Preço Unit.</th>
-                      <th>Subtotal</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (item of tempItens(); track $index) {
-                      <tr>
-                        <td>{{ item.produtoNome }}</td>
-                        <td>{{ item.quantidade }}</td>
-                        <td>{{ formatarMoeda(item.precoUnitario) }}</td>
-                        <td>{{ formatarMoeda(item.subtotal) }}</td>
-                        <td>
-                          <button class="btn-remove" (click)="removerItem($index)">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                              <line x1="18" y1="6" x2="6" y2="18"/>
-                              <line x1="6" y1="6" x2="18" y2="18"/>
-                            </svg>
-                          </button>
-                        </td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-                
-                <!-- Valor Total dos Itens -->
-                <div class="total-itens-display">
-                  <span class="total-itens-label">Valor Total:</span>
-                  <span class="total-itens-valor">{{ formatarMoeda(totalItensTemp()) }}</span>
-                </div>
-              }
             </div>
 
-            <!-- SEÇÃO DE PAGAMENTOS MÚLTIPLOS (OPCIONAL) -->
-            <div class="pagamentos-section">
-              <h3>Formas de Pagamento (Opcional)</h3>
-              <p style="margin: 0 0 16px 0; color: var(--text-secondary); font-size: 14px;">
-                Por padrão, o valor total será considerado na forma de pagamento selecionada abaixo. 
-                Você pode especificar pagamentos parciais (ex: R$ 20 em PIX, restante em Dinheiro).
-              </p>
-              <div class="pagamento-input-group">
-                <div class="form-group">
-                  <label>Forma de Pagamento Padrão</label>
+            @if (tempItens().length === 0) {
+              <div class="empty-state-card">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                </svg>
+                <p>Nenhum produto adicionado</p>
+                <span class="empty-state-hint">Selecione um produto acima para começar</span>
+              </div>
+            } @else {
+              <div class="create-itens-list">
+                @for (item of tempItens(); track $index) {
+                  <div class="create-item-card">
+                    <div class="create-item-info">
+                      <span class="create-item-nome">{{ item.produtoNome }}</span>
+                      <span class="create-item-detalhe">{{ item.quantidade }}x {{ formatarMoeda(item.precoUnitario) }}</span>
+                    </div>
+                    <div class="create-item-actions">
+                      <span class="create-item-subtotal">{{ formatarMoeda(item.subtotal) }}</span>
+                      <button class="btn-remove-item" (click)="removerItem($index)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18"/>
+                          <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                }
+              </div>
+
+              <!-- Total dos itens -->
+              <div class="create-total-bar">
+                <span class="create-total-label">Valor Total</span>
+                <span class="create-total-valor">{{ formatarMoeda(totalItensTemp()) }}</span>
+              </div>
+            }
+          </div>
+
+          <!-- SEÇÃO: PAGAMENTOS MÚLTIPLOS -->
+          <div class="edit-section">
+            <div class="section-header">
+              <div class="section-icon">💳</div>
+              <h3>Formas de Pagamento</h3>
+            </div>
+
+            <p class="create-section-hint">
+              Opcional: especifique pagamentos parciais. Caso contrário, o valor total será na forma de pagamento padrão.
+            </p>
+
+            <div class="create-pagamento-form">
+              <div class="create-form-row">
+                <div class="create-form-group create-form-grow">
+                  <label>Forma de Pagamento</label>
                   <select class="form-input" [value]="tempFormaPagamento()" (change)="updateFormaPagamento($event)">
-                    <option value="dinheiro">Dinheiro</option>
-                    <option value="pix">PIX</option>
-                    <option value="debito">Débito</option>
-                    <option value="credito">Crédito</option>
+                    <option value="dinheiro">💵 Dinheiro</option>
+                    <option value="pix">🔵 PIX</option>
+                    <option value="debito">💳 Débito</option>
+                    <option value="credito">💳 Crédito</option>
                   </select>
                 </div>
-
-                <div class="form-group">
-                  <label>Valor</label>
+                <div class="create-form-group create-form-md">
+                  <label>Valor (R$)</label>
                   <input 
                     type="number" 
                     class="form-input"
@@ -447,68 +489,79 @@
                     (input)="updateValorPagamento($event)"
                   />
                 </div>
-
-                <div class="form-group">
+                <div class="create-form-group create-form-btn">
                   <label>&nbsp;</label>
                   <button 
-                    class="btn-secondary"
+                    class="btn-add-produto btn-add-pagamento-style"
                     [disabled]="tempValorPagamento() <= 0"
                     (click)="adicionarPagamento()"
                   >
-                    Adicionar Pagamento
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="12" y1="5" x2="12" y2="19"/>
+                      <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    Adicionar
                   </button>
                 </div>
               </div>
+            </div>
 
-              @if (tempPagamentos().length === 0) {
-                <div class="pagamentos-vazia">
-                  <p>O valor total será considerado na forma de pagamento padrão selecionada.</p>
-                  @if (totalItensTemp() > 0) {
-                    <p><strong>Valor Total dos Itens: {{ formatarMoeda(totalItensTemp()) }}</strong></p>
-                  }
-                </div>
-              } @else {
-                <div class="pagamentos-list">
-                  @for (pagamento of tempPagamentos(); track $index) {
-                    <div class="pagamento-item">
-                      <div class="pagamento-info">
-                        <span class="pagamento-forma">{{ getFormaPagamentoLabel(pagamento.forma) }}</span>
-                        <span class="pagamento-valor">{{ formatarMoeda(pagamento.valor) }}</span>
-                      </div>
-                      <button class="btn-remove" (click)="removerPagamento($index)">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <line x1="18" y1="6" x2="6" y2="18"/>
-                          <line x1="6" y1="6" x2="18" y2="18"/>
-                        </svg>
-                      </button>
+            @if (tempPagamentos().length === 0) {
+              <div class="create-pagamento-hint">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="16" x2="12" y2="12"/>
+                  <line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
+                <span>O valor total será considerado na forma de pagamento padrão selecionada.</span>
+              </div>
+            } @else {
+              <div class="create-pagamentos-list">
+                @for (pagamento of tempPagamentos(); track $index) {
+                  <div class="create-pagamento-card">
+                    <div class="create-pagamento-info">
+                      <span class="create-pagamento-badge">{{ getFormaPagamentoLabel(pagamento.forma) }}</span>
+                      <span class="create-pagamento-valor">{{ formatarMoeda(pagamento.valor) }}</span>
                     </div>
-                  }
-                </div>
-
-                <div class="total-pagamentos">
-                  <span class="total-pagamentos-label">Total Especificado:</span>
-                  <span class="total-pagamentos-valor">{{ formatarMoeda(totalPagamentosTemp()) }}</span>
-                </div>
-                
-                @if (totalItensTemp() - totalPagamentosTemp() > 0.01) {
-                  <div class="info-box" style="margin-top: 12px;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <circle cx="12" cy="12" r="10"/>
-                      <line x1="12" y1="16" x2="12" y2="12"/>
-                      <line x1="12" y1="8" x2="12.01" y2="8"/>
-                    </svg>
-                    <p>Restante de {{ formatarMoeda(totalItensTemp() - totalPagamentosTemp()) }} será considerado em {{ getFormaPagamentoLabel(tempFormaPagamento()) }}</p>
+                    <button class="btn-remove-item" (click)="removerPagamento($index)">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                      </svg>
+                    </button>
                   </div>
                 }
+              </div>
+
+              <div class="create-total-bar create-total-pagamentos">
+                <span class="create-total-label">Total Especificado</span>
+                <span class="create-total-valor">{{ formatarMoeda(totalPagamentosTemp()) }}</span>
+              </div>
+
+              @if (totalItensTemp() - totalPagamentosTemp() > 0.01) {
+                <div class="create-restante-info">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="16" x2="12" y2="12"/>
+                    <line x1="12" y1="8" x2="12.01" y2="8"/>
+                  </svg>
+                  <span>Restante de <strong>{{ formatarMoeda(totalItensTemp() - totalPagamentosTemp()) }}</strong> será em <strong>{{ getFormaPagamentoLabel(tempFormaPagamento()) }}</strong></span>
+                </div>
               }
-            </div>
+            }
           </div>
         }
 
-        <!-- STEP 2: CLIENTE E ENDEREÇO -->
+        <!-- ===================== STEP 2: CLIENTE E ENDEREÇO ===================== -->
         @if (createStep() === 2) {
-          <div class="step-content">
-            <!-- Busca de Cliente -->
+
+          <!-- SEÇÃO: BUSCA DE CLIENTE -->
+          <div class="edit-section">
+            <div class="section-header">
+              <div class="section-icon">👤</div>
+              <h3>Selecionar Cliente</h3>
+            </div>
+
             <div class="cliente-search-box">
               <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="11" cy="11" r="8"/>
@@ -552,13 +605,20 @@
                 </select>
               </div>
             }
+          </div>
 
-            <div class="form-group">
-              <label>Observações</label>
+          <!-- SEÇÃO: OBSERVAÇÕES -->
+          <div class="edit-section">
+            <div class="section-header">
+              <div class="section-icon">📝</div>
+              <h3>Observações</h3>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
               <textarea 
                 class="form-textarea"
                 rows="3"
-                placeholder="Observações sobre a venda..."
+                placeholder="Observações sobre a venda (opcional)..."
                 [value]="tempObservacoes()"
                 (input)="updateTempObservacoes($event)"
               ></textarea>
@@ -566,76 +626,126 @@
           </div>
         }
 
-        <!-- STEP 3: ENTREGADOR -->
+        <!-- ===================== STEP 3: ENTREGADOR ===================== -->
         @if (createStep() === 3) {
-          <div class="step-content">
-            <h3>Selecione o Entregador</h3>
-            <div class="entregador-grid">
+
+          <!-- SEÇÃO: SELECIONAR ENTREGADOR -->
+          <div class="edit-section">
+            <div class="section-header">
+              <div class="section-icon">🚚</div>
+              <h3>Selecione o Entregador</h3>
+            </div>
+
+            <div class="create-entregador-grid">
               @for (entregador of entregadoresAtivos(); track entregador.id) {
-                <div class="entregador-card" (click)="confirmarCadastro(entregador.id)">
-                  <div class="entregador-info">
-                    <span class="entregador-identificador">{{ entregador.identificador }}</span>
-                    <span class="entregador-nome">{{ entregador.nomeCompleto }}</span>
+                <div class="create-entregador-card" (click)="confirmarCadastro(entregador.id)">
+                  <div class="create-entregador-avatar">
+                    {{ entregador.identificador.charAt(0) }}
                   </div>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="9 18 15 12 9 6"/>
-                  </svg>
+                  <div class="create-entregador-info">
+                    <span class="create-entregador-id">{{ entregador.identificador }}</span>
+                    <span class="create-entregador-nome">{{ entregador.nomeCompleto }}</span>
+                  </div>
+                  <div class="create-entregador-arrow">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="9 18 15 12 9 6"/>
+                    </svg>
+                  </div>
                 </div>
               }
             </div>
+          </div>
 
-            <div class="resumo-venda">
-              <h4>Resumo da Venda</h4>
+          <!-- SEÇÃO: RESUMO DA VENDA -->
+          <div class="edit-section">
+            <div class="section-header">
+              <div class="section-icon">📋</div>
+              <h3>Resumo da Venda</h3>
+            </div>
+
+            <div class="resumo-content">
               @if (tempClienteId()) {
                 @for (cliente of clientes(); track cliente.id) {
                   @if (cliente.id === tempClienteId()) {
-                    <p><strong>Cliente:</strong> {{ cliente.nome }}</p>
+                    <div class="resumo-row">
+                      <span class="resumo-label">👤 Cliente</span>
+                      <span class="resumo-value">{{ cliente.nome }}</span>
+                    </div>
                   }
                 }
               }
               @if (tempEnderecoId()) {
                 @for (endereco of enderecosDoCliente(); track endereco.id) {
                   @if (endereco.id === tempEnderecoId()) {
-                    <p><strong>Endereço:</strong> {{ getEnderecoFormatado(endereco) }}</p>
+                    <div class="resumo-row">
+                      <span class="resumo-label">📍 Endereço</span>
+                      <span class="resumo-value">{{ getEnderecoFormatado(endereco) }}</span>
+                    </div>
                   }
                 }
               }
-              <p><strong>Itens:</strong> {{ tempItens().length }} produto(s)</p>
-              <p><strong>Valor Total:</strong> {{ formatarMoeda(totalItensTemp()) }}</p>
-              
+              <div class="resumo-row">
+                <span class="resumo-label">📦 Itens</span>
+                <span class="resumo-value">{{ tempItens().length }} produto(s)</span>
+              </div>
+
               @if (tempPagamentos().length > 0) {
-                <p><strong>Pagamentos Especificados:</strong></p>
-                <ul style="margin: 8px 0 8px 20px;">
-                  @for (pagamento of tempPagamentos(); track $index) {
-                    <li>{{ getFormaPagamentoLabel(pagamento.forma) }}: {{ formatarMoeda(pagamento.valor) }}</li>
-                  }
-                  @if (totalItensTemp() - totalPagamentosTemp() > 0.01) {
-                    <li>{{ getFormaPagamentoLabel(tempFormaPagamento()) }}: {{ formatarMoeda(totalItensTemp() - totalPagamentosTemp()) }} (restante)</li>
-                  }
-                </ul>
+                <div class="resumo-row">
+                  <span class="resumo-label">💳 Pagamentos</span>
+                  <div class="resumo-pagamentos-list">
+                    @for (pagamento of tempPagamentos(); track $index) {
+                      <span class="resumo-pagamento-tag">{{ getFormaPagamentoLabel(pagamento.forma) }}: {{ formatarMoeda(pagamento.valor) }}</span>
+                    }
+                    @if (totalItensTemp() - totalPagamentosTemp() > 0.01) {
+                      <span class="resumo-pagamento-tag restante">{{ getFormaPagamentoLabel(tempFormaPagamento()) }}: {{ formatarMoeda(totalItensTemp() - totalPagamentosTemp()) }} (restante)</span>
+                    }
+                  </div>
+                </div>
               } @else {
-                <p><strong>Forma de Pagamento:</strong> {{ getFormaPagamentoLabel(tempFormaPagamento()) }} (valor total)</p>
+                <div class="resumo-row">
+                  <span class="resumo-label">💳 Pagamento</span>
+                  <span class="resumo-value">{{ getFormaPagamentoLabel(tempFormaPagamento()) }} (valor total)</span>
+                </div>
               }
+            </div>
+
+            <div class="resumo-total">
+              <span class="resumo-total-label">Valor Total</span>
+              <span class="resumo-total-value">{{ formatarMoeda(totalItensTemp()) }}</span>
             </div>
           </div>
         }
+
       </div>
 
-      <div class="modal-footer">
+      <!-- FOOTER -->
+      <div class="modal-footer modal-edit-footer">
         @if (createStep() > 1) {
-          <button class="btn-secondary" (click)="voltarStep()">Voltar</button>
+          <button class="btn-cancel" (click)="voltarStep()" type="button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+            Voltar
+          </button>
         }
-        <button class="btn-secondary" (click)="closeModal()">Cancelar</button>
+        <button class="btn-cancel" (click)="closeModal()" type="button">
+          Cancelar
+        </button>
         @if (createStep() < 3) {
           <button 
-            class="btn-primary"
+            class="btn-save"
             [disabled]="(createStep() === 1 && tempItens().length === 0) || (createStep() === 2 && (!tempClienteId() || !tempEnderecoId()))"
             (click)="proximoStep()"
+            type="button"
           >
             Próximo
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
           </button>
         }
       </div>
+
     </div>
   </div>
 }
