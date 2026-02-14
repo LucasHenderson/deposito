@@ -5,11 +5,24 @@
       <h1 class="page-title">Painel Principal</h1>
       <p class="page-subtitle">Resumos e estatísticas do sistema</p>
     </div>
+    <button class="visibility-toggle" (click)="toggleValoresVisiveis($event)" [attr.title]="valoresVisiveis() ? 'Ocultar valores' : 'Exibir valores'">
+      @if (valoresVisiveis()) {
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+        </svg>
+      } @else {
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+          <line x1="1" y1="1" x2="23" y2="23"/>
+        </svg>
+      }
+    </button>
   </div>
 
   <!-- Cards Resumo -->
   <div class="summary-cards">
-    <div class="summary-card">
+    <!-- Vendas Totais -->
+    <div class="summary-card" (click)="toggleCardDropdown('vendas', $event)">
       <div class="summary-icon vendas-icon">
         <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
@@ -17,11 +30,21 @@
         </svg>
       </div>
       <div class="summary-info">
-        <span class="summary-value">{{ totalVendas() }}</span>
+        <span class="summary-value" [class.masked]="!valoresVisiveis()">
+          {{ valoresVisiveis() ? '' + totalVendas() : mascarar('' + totalVendas()) }}
+        </span>
         <span class="summary-label">Vendas Totais</span>
       </div>
+      @if (cardDropdownAberto() === 'vendas') {
+        <div class="card-dropdown" (click)="$event.stopPropagation()">
+          <span class="card-dropdown-label">Vendas Totais</span>
+          <span class="card-dropdown-value">{{ totalVendas() }}</span>
+        </div>
+      }
     </div>
-    <div class="summary-card">
+
+    <!-- Clientes -->
+    <div class="summary-card" (click)="toggleCardDropdown('clientes', $event)">
       <div class="summary-icon clientes-icon">
         <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
@@ -29,11 +52,21 @@
         </svg>
       </div>
       <div class="summary-info">
-        <span class="summary-value">{{ totalClientes() }}</span>
+        <span class="summary-value" [class.masked]="!valoresVisiveis()">
+          {{ valoresVisiveis() ? '' + totalClientes() : mascarar('' + totalClientes()) }}
+        </span>
         <span class="summary-label">Clientes</span>
       </div>
+      @if (cardDropdownAberto() === 'clientes') {
+        <div class="card-dropdown" (click)="$event.stopPropagation()">
+          <span class="card-dropdown-label">Clientes</span>
+          <span class="card-dropdown-value">{{ totalClientes() }}</span>
+        </div>
+      }
     </div>
-    <div class="summary-card">
+
+    <!-- Entregadores Ativos -->
+    <div class="summary-card" (click)="toggleCardDropdown('entregadores', $event)">
       <div class="summary-icon entregadores-icon">
         <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
@@ -41,20 +74,38 @@
         </svg>
       </div>
       <div class="summary-info">
-        <span class="summary-value">{{ totalEntregadoresAtivos() }}</span>
+        <span class="summary-value" [class.masked]="!valoresVisiveis()">
+          {{ valoresVisiveis() ? '' + totalEntregadoresAtivos() : mascarar('' + totalEntregadoresAtivos()) }}
+        </span>
         <span class="summary-label">Entregadores Ativos</span>
       </div>
+      @if (cardDropdownAberto() === 'entregadores') {
+        <div class="card-dropdown" (click)="$event.stopPropagation()">
+          <span class="card-dropdown-label">Entregadores Ativos</span>
+          <span class="card-dropdown-value">{{ totalEntregadoresAtivos() }}</span>
+        </div>
+      }
     </div>
-    <div class="summary-card">
+
+    <!-- Faturamento Total -->
+    <div class="summary-card" (click)="toggleCardDropdown('faturamento', $event)">
       <div class="summary-icon faturamento-icon">
         <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
         </svg>
       </div>
       <div class="summary-info">
-        <span class="summary-value">{{ formatCurrency(faturamentoTotal()) }}</span>
+        <span class="summary-value" [class.masked]="!valoresVisiveis()">
+          {{ valoresVisiveis() ? formatCurrency(faturamentoTotal()) : mascarar(formatCurrency(faturamentoTotal())) }}
+        </span>
         <span class="summary-label">Faturamento Total</span>
       </div>
+      @if (cardDropdownAberto() === 'faturamento') {
+        <div class="card-dropdown" (click)="$event.stopPropagation()">
+          <span class="card-dropdown-label">Faturamento Total</span>
+          <span class="card-dropdown-value">{{ formatCurrency(faturamentoTotal()) }}</span>
+        </div>
+      }
     </div>
   </div>
 

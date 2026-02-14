@@ -72,10 +72,28 @@ export class PainelPrincipal implements OnInit {
   adiantamentos = this.adiantamentoService.getAdiantamentos();
 
   // ==================== CARDS RESUMO ====================
+  valoresVisiveis = signal(false);
+  cardDropdownAberto = signal<string | null>(null);
+
   totalVendas = computed(() => this.vendas().length);
   totalClientes = computed(() => this.clientes().length);
   totalEntregadoresAtivos = computed(() => this.entregadores().filter(e => e.ativo).length);
   faturamentoTotal = computed(() => this.vendas().reduce((sum, v) => sum + v.valorTotal, 0));
+
+  toggleValoresVisiveis(event: Event) {
+    event.stopPropagation();
+    this.valoresVisiveis.update(v => !v);
+    this.cardDropdownAberto.set(null);
+  }
+
+  toggleCardDropdown(cardId: string, event: Event) {
+    event.stopPropagation();
+    this.cardDropdownAberto.update(v => v === cardId ? null : cardId);
+  }
+
+  mascarar(valor: string): string {
+    return valor.replace(/[0-9]/g, '•').replace(/[A-Za-z]/g, '•');
+  }
 
   // ==================== HELPERS DE AGRUPAMENTO ====================
   getDateKey(date: Date, agrupamento: Agrupamento): string {
@@ -578,6 +596,7 @@ export class PainelPrincipal implements OnInit {
     const target = event.target as HTMLElement;
     if (!target.closest('.quadra-selector')) this.showQuadraDropdown.set(false);
     if (!target.closest('.cliente-selector')) this.showClienteDropdown.set(false);
+    if (!target.closest('.summary-card')) this.cardDropdownAberto.set(null);
   }
 
   trackByIndex(index: number): number { return index; }
