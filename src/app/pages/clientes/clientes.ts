@@ -5,6 +5,8 @@ import { ClienteService } from '../../services/cliente.service';
 import { EnderecoService } from '../../services/endereco.service';
 import { Cliente, ClienteFormData, HistoricoCompra } from '../../models/cliente.model';
 import { Endereco } from '../../models/endereco.model';
+import { AuthService } from '../../services/auth.service';
+import { LogService } from '../../services/log.service';
 
 type ModalType = 'create' | 'edit' | 'delete' | 'view' | 'historico' | null;
 type SortOrder = 'nome-asc' | 'nome-desc' | 'recentes' | 'antigos' | 'sem-compras' | 'nenhum';
@@ -18,6 +20,8 @@ type SortOrder = 'nome-asc' | 'nome-desc' | 'recentes' | 'antigos' | 'sem-compra
 export class Clientes {
   private clienteService = inject(ClienteService);
   private enderecoService = inject(EnderecoService);
+  private authService = inject(AuthService);
+  private logService = inject(LogService);
 
   // Paginação
   currentPage = signal(1);
@@ -352,37 +356,55 @@ export class Clientes {
     const data = this.formData();
     const isEdit = this.modalType() === 'edit';
     
+    const usuario = this.authService.usuarioLogado()?.usuario ?? 'desconhecido';
+
     if (isEdit) {
-      const clienteId = this.selectedCliente()!.id;
-      const oldEnderecos = this.selectedCliente()!.enderecosIds;
-      
+      const cliente = this.selectedCliente()!;
+      const clienteId = cliente.id;
+      const oldEnderecos = cliente.enderecosIds;
+
+      const antes = `Nome: ${cliente.nome}\nTelefone: ${cliente.telefone}\nObservações: ${cliente.observacoes || 'Nenhuma'}`;
+
       // Atualiza cliente
       this.clienteService.updateCliente(clienteId, data);
-      
+
       // Atualiza vínculos nos endereços
-      // Remove dos antigos
       oldEnderecos.forEach(endId => {
         if (!data.enderecosIds.includes(endId)) {
           this.enderecoService.desvincularCliente(endId, clienteId);
         }
       });
-      // Adiciona nos novos
       data.enderecosIds.forEach(endId => {
         if (!oldEnderecos.includes(endId)) {
           this.enderecoService.vincularCliente(endId, clienteId);
         }
       });
-      
+
+      const depois = `Nome: ${data.nome}\nTelefone: ${data.telefone}\nObservações: ${data.observacoes || 'Nenhuma'}`;
+
+      this.logService.registrar('editar', 'Clientes',
+        `Cliente "${data.nome}" editado`,
+        depois,
+        usuario,
+        antes
+      );
+
       this.closeModal();
     } else {
       // Cria novo cliente
       const novoCliente = this.clienteService.createCliente(data);
-      
+
       // Vincula aos endereços selecionados
       data.enderecosIds.forEach(endId => {
         this.enderecoService.vincularCliente(endId, novoCliente.id);
       });
-      
+
+      this.logService.registrar('criar', 'Clientes',
+        `Cliente "${novoCliente.nome}" criado`,
+        `Nome: ${novoCliente.nome}\nTelefone: ${novoCliente.telefone}\nObservações: ${novoCliente.observacoes || 'Nenhuma'}`,
+        usuario
+      );
+
       // Gera texto de cadastro
       const enderecosFormatados = this.getEnderecosFormatados(data.enderecosIds);
       const texto = this.clienteService.gerarTextoCadastro(novoCliente, enderecosFormatados);
@@ -393,12 +415,18 @@ export class Clientes {
   confirmDelete() {
     const cliente = this.selectedCliente();
     if (cliente) {
+      this.logService.registrar('excluir', 'Clientes',
+        `Cliente "${cliente.nome}" excluído`,
+        `ID: ${cliente.id}\nNome: ${cliente.nome}\nTelefone: ${cliente.telefone}`,
+        this.authService.usuarioLogado()?.usuario ?? 'desconhecido'
+      );
+
       // Remove vínculos dos endereços
       this.enderecoService.removerClienteDeTodosEnderecos(cliente.id);
-      
+
       // Exclui cliente
       this.clienteService.deleteCliente(cliente.id);
-      
+
       this.closeModal();
     }
   }

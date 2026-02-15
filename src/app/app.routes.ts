@@ -58,6 +58,11 @@ export const routes: Routes = [
             path: 'entregadores',
             loadComponent: () => import('./pages/entregadores/entregadores').then((m) => m.Entregadores),
             canActivate: [authGuard],
+        },
+        {
+            path: 'logs',
+            loadComponent: () => import('./pages/logs/logs').then((m) => m.Logs),
+            canActivate: [authGuard],
         }
     ]
     },

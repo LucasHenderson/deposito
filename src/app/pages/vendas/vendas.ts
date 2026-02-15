@@ -9,6 +9,7 @@ import { ProdutoService } from '../../services/produto.service';
 import { Venda, VendaFormData, StatusVenda, FormaPagamento, ItemVenda, PagamentoVenda } from '../../models/venda.model';
 import { NotificationService } from '../../services/notification.service';
 import { AuthService } from '../../services/auth.service';
+import { LogService } from '../../services/log.service';
 import { Cliente } from '../../models/cliente.model';
 import { Endereco } from '../../models/endereco.model';
 import { Entregador } from '../../models/entregador.model';
@@ -31,6 +32,7 @@ export class Vendas {
   private produtoService = inject(ProdutoService);
   private notificationService = inject(NotificationService);
   private authService = inject(AuthService);
+  private logService = inject(LogService);
 
   isAdmin = this.authService.isAdmin;
 
@@ -592,6 +594,11 @@ limparFiltros() {
 
     const venda = this.vendaService.createVenda(vendaData);
     if (venda) {
+      this.logService.registrar('criar', 'Vendas',
+        `Venda criada para ${venda.clienteNome} — ${this.formatarMoeda(venda.valorTotal)}`,
+        `Cliente: ${venda.clienteNome}\nEndereço: ${venda.enderecoFormatado}\nEntregador: ${venda.entregadorIdentificador}\nValor: ${this.formatarMoeda(venda.valorTotal)}\nItens: ${venda.itens.map(i => `${i.produtoNome} x${i.quantidade}`).join(', ')}\nPagamentos: ${venda.pagamentos.map(p => `${p.forma} ${this.formatarMoeda(p.valor)}`).join(', ')}\nObservações: ${venda.observacoes || 'Nenhuma'}`,
+        this.authService.usuarioLogado()?.usuario ?? 'desconhecido'
+      );
       this.closeModal();
     } else {
       alert('Erro ao criar venda. Verifique o estoque disponível.');
@@ -786,8 +793,21 @@ limparFiltros() {
     const venda = this.selectedVenda();
     if (!venda) return;
 
+    const antes = `Cliente: ${venda.clienteNome}\nEndereço: ${venda.enderecoFormatado}\nEntregador: ${venda.entregadorIdentificador}\nValor: ${this.formatarMoeda(venda.valorTotal)}\nItens: ${venda.itens.map(i => `${i.produtoNome} x${i.quantidade}`).join(', ')}\nPagamentos: ${venda.pagamentos.map(p => `${p.forma} ${this.formatarMoeda(p.valor)}`).join(', ')}\nObservações: ${venda.observacoes || 'Nenhuma'}`;
+
     const sucesso = this.vendaService.updateVenda(venda.id, this.formData());
     if (sucesso) {
+      const vendaAtualizada = this.vendaService.getVendaById(venda.id);
+      const depois = vendaAtualizada
+        ? `Cliente: ${vendaAtualizada.clienteNome}\nEndereço: ${vendaAtualizada.enderecoFormatado}\nEntregador: ${vendaAtualizada.entregadorIdentificador}\nValor: ${this.formatarMoeda(vendaAtualizada.valorTotal)}\nItens: ${vendaAtualizada.itens.map(i => `${i.produtoNome} x${i.quantidade}`).join(', ')}\nPagamentos: ${vendaAtualizada.pagamentos.map(p => `${p.forma} ${this.formatarMoeda(p.valor)}`).join(', ')}\nObservações: ${vendaAtualizada.observacoes || 'Nenhuma'}`
+        : 'Dados atualizados';
+
+      this.logService.registrar('editar', 'Vendas',
+        `Venda de ${venda.clienteNome} editada — ${this.formatarMoeda(venda.valorTotal)}`,
+        depois,
+        this.authService.usuarioLogado()?.usuario ?? 'desconhecido',
+        antes
+      );
       this.closeModal();
     } else {
       alert('Erro ao atualizar venda.');
@@ -805,6 +825,11 @@ limparFiltros() {
     const venda = this.selectedVenda();
     if (!venda) return;
 
+    this.logService.registrar('excluir', 'Vendas',
+      `Venda de ${venda.clienteNome} excluída — ${this.formatarMoeda(venda.valorTotal)}`,
+      `ID: ${venda.id}\nCliente: ${venda.clienteNome}\nEndereço: ${venda.enderecoFormatado}\nEntregador: ${venda.entregadorIdentificador}\nValor: ${this.formatarMoeda(venda.valorTotal)}\nItens: ${venda.itens.map(i => `${i.produtoNome} x${i.quantidade}`).join(', ')}\nData: ${new Date(venda.dataVenda).toLocaleDateString('pt-BR')}`,
+      this.authService.usuarioLogado()?.usuario ?? 'desconhecido'
+    );
     this.vendaService.deleteVenda(venda.id);
     this.closeModal();
   }

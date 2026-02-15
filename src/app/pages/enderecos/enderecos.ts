@@ -5,6 +5,8 @@ import { EnderecoService } from '../../services/endereco.service';
 import { ClienteService } from '../../services/cliente.service';
 import { Endereco, EnderecoFormData, QuadraResumo } from '../../models/endereco.model';
 import { Cliente } from '../../models/cliente.model';
+import { AuthService } from '../../services/auth.service';
+import { LogService } from '../../services/log.service';
 
 type ModalType = 'create' | 'edit' | 'delete' | null;
 type SortOrder = 'quadra-asc' | 'quadra-desc' | 'mais-clientes' | 'menos-clientes' | 'nenhum';
@@ -18,6 +20,8 @@ type SortOrder = 'quadra-asc' | 'quadra-desc' | 'mais-clientes' | 'menos-cliente
 export class Enderecos {
   private enderecoService = inject(EnderecoService);
   private clienteService = inject(ClienteService);
+  private authService = inject(AuthService);
+  private logService = inject(LogService);
 
   // Paginação - Endereços
   currentPage = signal(1);
@@ -257,34 +261,53 @@ export class Enderecos {
     const data = this.formData();
     const isEdit = this.modalType() === 'edit';
     
+    const usuario = this.authService.usuarioLogado()?.usuario ?? 'desconhecido';
+    const enderecoLabel = `QD ${data.quadra} AL ${data.alameda} LT ${data.lote}${data.casa ? ' CS ' + data.casa : ''}`;
+
     if (isEdit) {
-      const enderecoId = this.selectedEndereco()!.id;
-      const oldClientes = this.selectedEndereco()!.clientesIds;
-      
+      const endereco = this.selectedEndereco()!;
+      const enderecoId = endereco.id;
+      const oldClientes = endereco.clientesIds;
+
+      const antes = `Quadra: ${endereco.quadra}\nAlameda: ${endereco.alameda}\nQI: ${endereco.qi}\nLote: ${endereco.lote}\nCasa: ${endereco.casa || '-'}\nComplemento: ${endereco.complemento || '-'}`;
+
       // Atualiza endereço
       this.enderecoService.updateEndereco(enderecoId, data);
-      
+
       // Atualiza vínculos nos clientes
-      // Remove dos antigos
       oldClientes.forEach(cliId => {
         if (!data.clientesIds.includes(cliId)) {
           this.clienteService.desvincularEndereco(cliId, enderecoId);
         }
       });
-      // Adiciona nos novos
       data.clientesIds.forEach(cliId => {
         if (!oldClientes.includes(cliId)) {
           this.clienteService.vincularEndereco(cliId, enderecoId);
         }
       });
+
+      const depois = `Quadra: ${data.quadra}\nAlameda: ${data.alameda}\nQI: ${data.qi}\nLote: ${data.lote}\nCasa: ${data.casa || '-'}\nComplemento: ${data.complemento || '-'}`;
+
+      this.logService.registrar('editar', 'Endereços',
+        `Endereço "${enderecoLabel}" editado`,
+        depois,
+        usuario,
+        antes
+      );
     } else {
       // Cria novo endereço
       const novoEndereco = this.enderecoService.createEndereco(data);
-      
+
       // Vincula aos clientes selecionados
       data.clientesIds.forEach(cliId => {
         this.clienteService.vincularEndereco(cliId, novoEndereco.id);
       });
+
+      this.logService.registrar('criar', 'Endereços',
+        `Endereço "${enderecoLabel}" criado`,
+        `Quadra: ${data.quadra}\nAlameda: ${data.alameda}\nQI: ${data.qi}\nLote: ${data.lote}\nCasa: ${data.casa || '-'}\nComplemento: ${data.complemento || '-'}`,
+        usuario
+      );
     }
 
     this.closeModal();
@@ -293,12 +316,20 @@ export class Enderecos {
   confirmDelete() {
     const endereco = this.selectedEndereco();
     if (endereco) {
+      const enderecoLabel = this.getEnderecoFormatado(endereco);
+
+      this.logService.registrar('excluir', 'Endereços',
+        `Endereço "${enderecoLabel}" excluído`,
+        `ID: ${endereco.id}\nQuadra: ${endereco.quadra}\nAlameda: ${endereco.alameda}\nQI: ${endereco.qi}\nLote: ${endereco.lote}\nCasa: ${endereco.casa || '-'}`,
+        this.authService.usuarioLogado()?.usuario ?? 'desconhecido'
+      );
+
       // Remove vínculos dos clientes
       this.clienteService.removerEnderecosDeTodosClientes(endereco.id);
-      
+
       // Exclui endereço
       this.enderecoService.deleteEndereco(endereco.id);
-      
+
       this.closeModal();
     }
   }
