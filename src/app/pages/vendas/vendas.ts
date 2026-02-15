@@ -7,7 +7,9 @@ import { EnderecoService } from '../../services/endereco.service';
 import { EntregadorService } from '../../services/entregador.service';
 import { ProdutoService } from '../../services/produto.service';
 import { Venda, VendaFormData, StatusVenda, FormaPagamento, ItemVenda, PagamentoVenda } from '../../models/venda.model';
-import { NotificationService } from '../../services/notification.service';import { Cliente } from '../../models/cliente.model';
+import { NotificationService } from '../../services/notification.service';
+import { AuthService } from '../../services/auth.service';
+import { Cliente } from '../../models/cliente.model';
 import { Endereco } from '../../models/endereco.model';
 import { Entregador } from '../../models/entregador.model';
 import { Produto } from '../../models/produto.model';
@@ -28,6 +30,9 @@ export class Vendas {
   private entregadorService = inject(EntregadorService);
   private produtoService = inject(ProdutoService);
   private notificationService = inject(NotificationService);
+  private authService = inject(AuthService);
+
+  isAdmin = this.authService.isAdmin;
 
   // Paginação
   currentPage = signal(1);

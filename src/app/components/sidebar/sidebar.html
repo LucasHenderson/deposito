@@ -4,9 +4,10 @@
   </div>
 
   <nav class="sidebar-menu">
-    <a routerLink="/painel-principal" 
-       routerLinkActive="active" 
-       [routerLinkActiveOptions]="{exact: true}" 
+    @if (isAdmin()) {
+    <a routerLink="/painel-principal"
+       routerLinkActive="active"
+       [routerLinkActiveOptions]="{exact: true}"
        class="menu-item">
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <rect x="3" y="3" width="7" height="7"/>
@@ -16,10 +17,11 @@
       </svg>
       <span>Painel Principal</span>
     </a>
+    }
 
-    <a routerLink="/vendas" 
-       routerLinkActive="active" 
-       [routerLinkActiveOptions]="{exact: true}" 
+    <a routerLink="/vendas"
+       routerLinkActive="active"
+       [routerLinkActiveOptions]="{exact: true}"
        class="menu-item">
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="9" cy="21" r="1"/>
@@ -28,10 +30,11 @@
       </svg>
       <span>Vendas</span>
     </a>
-    
-    <a routerLink="/adiantamento-salarial" 
-       routerLinkActive="active" 
-       [routerLinkActiveOptions]="{exact: true}" 
+
+    @if (isAdmin()) {
+    <a routerLink="/adiantamento-salarial"
+       routerLinkActive="active"
+       [routerLinkActiveOptions]="{exact: true}"
        class="menu-item">
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <rect x="2" y="5" width="20" height="14" rx="2"/>
@@ -39,10 +42,11 @@
       </svg>
       <span>Adiantamento Salarial</span>
     </a>
-    
-    <a routerLink="/clientes" 
-       routerLinkActive="active" 
-       [routerLinkActiveOptions]="{exact: true}" 
+    }
+
+    <a routerLink="/clientes"
+       routerLinkActive="active"
+       [routerLinkActiveOptions]="{exact: true}"
        class="menu-item">
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
@@ -53,9 +57,9 @@
       <span>Clientes</span>
     </a>
 
-    <a routerLink="/enderecos" 
-       routerLinkActive="active" 
-       [routerLinkActiveOptions]="{exact: true}" 
+    <a routerLink="/enderecos"
+       routerLinkActive="active"
+       [routerLinkActiveOptions]="{exact: true}"
        class="menu-item">
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
@@ -63,10 +67,11 @@
       </svg>
       <span>Endereços</span>
     </a>
-    
-    <a routerLink="/produtos" 
-       routerLinkActive="active" 
-       [routerLinkActiveOptions]="{exact: true}" 
+
+    @if (isAdmin()) {
+    <a routerLink="/produtos"
+       routerLinkActive="active"
+       [routerLinkActiveOptions]="{exact: true}"
        class="menu-item">
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
@@ -75,10 +80,10 @@
       </svg>
       <span>Produtos</span>
     </a>
-       
-    <a routerLink="/entregadores" 
-       routerLinkActive="active" 
-       [routerLinkActiveOptions]="{exact: true}" 
+
+    <a routerLink="/entregadores"
+       routerLinkActive="active"
+       [routerLinkActiveOptions]="{exact: true}"
        class="menu-item">
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M5 18a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/>
@@ -89,5 +94,6 @@
       </svg>
       <span>Entregadores</span>
     </a>
+    }
   </nav>
 </aside>

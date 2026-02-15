@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { ThemeService } from '../../services/theme.service';
 import { NotificationService } from '../../services/notification.service';
+import { AuthService } from '../../services/auth.service';
 import { Notificacao } from '../../models/notification.model';
 
 @Component({
@@ -15,6 +16,7 @@ export class Topbar {
   private router = inject(Router);
   private themeService = inject(ThemeService);
   private notificationService = inject(NotificationService);
+  private authService = inject(AuthService);
 
   @Output() toggleSidebar = new EventEmitter<void>();
   isMenuOpen = false;
@@ -74,6 +76,7 @@ export class Topbar {
 
   logout() {
     this.isMenuOpen = false;
+    this.authService.logout();
     this.router.navigate(['/login']);
   }
 }

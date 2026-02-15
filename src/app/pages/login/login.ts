@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ThemeService } from '../../services/theme.service';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-login',
@@ -12,11 +13,12 @@ import { ThemeService } from '../../services/theme.service';
 export class Login {
   private router = inject(Router);
   private themeService = inject(ThemeService);
+  private authService = inject(AuthService);
 
   // Campos do formulário
   usuario = signal('');
   senha = signal('');
-  
+
   // Estado do formulário
   showPassword = signal(false);
   isLoading = signal(false);
@@ -47,7 +49,7 @@ export class Login {
 
   handleSubmit(event: Event) {
     event.preventDefault();
-    
+
     // Limpa mensagem de erro anterior
     this.errorMessage.set('');
 
@@ -65,11 +67,9 @@ export class Login {
     // Simula carregamento
     this.isLoading.set(true);
 
-    // Simulação de autenticação (substituir por chamada real à API)
     setTimeout(() => {
-      // Credenciais de exemplo para teste
-      if (this.usuario() === 'admin' && this.senha() === 'admin') {
-        this.router.navigate(['/painel-principal']);
+      if (this.authService.login(this.usuario(), this.senha())) {
+        this.router.navigate([this.authService.getRotaInicial()]);
       } else {
         this.errorMessage.set('Usuário ou senha incorretos');
       }
