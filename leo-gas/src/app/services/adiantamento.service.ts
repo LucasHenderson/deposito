@@ -81,10 +81,10 @@ export class AdiantamentoService {
     return this.adiantamentos().filter(a => a.entregadorId === entregadorId);
   }
 
-  createAdiantamento(entregadorId: string, data: AdiantamentoFormData): boolean {
+  createAdiantamento(entregadorId: string | number, data: AdiantamentoFormData): boolean {
     const novoAdiantamento: Adiantamento = {
       id: Date.now().toString(),
-      entregadorId,
+      entregadorId: String(entregadorId),
       descricao: data.descricao,
       data: new Date(data.data),
       valor: data.valor

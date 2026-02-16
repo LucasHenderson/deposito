@@ -416,7 +416,7 @@ export class PainelPrincipal implements OnInit {
 
   entregadorSelecionado = computed(() => {
     const id = this.entregadorSelecionadoId();
-    return id ? this.entregadores().find(e => e.id === id) || null : null;
+    return id ? this.entregadores().find(e => String(e.id) === id) || null : null;
   });
 
   entregadorChartData = computed(() => {

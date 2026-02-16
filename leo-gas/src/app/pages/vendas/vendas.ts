@@ -553,7 +553,7 @@ limparFiltros() {
   }
 
   // Step 3: Selecionar entregador e confirmar
-  confirmarCadastro(entregadorId: string) {
+  confirmarCadastro(entregadorId: string | number) {
     if (!entregadorId || this.tempItens().length === 0 || !this.tempClienteId() || !this.tempEnderecoId()) {
       return;
     }
@@ -585,7 +585,7 @@ limparFiltros() {
     const vendaData: VendaFormData = {
       clienteId: this.tempClienteId(),
       enderecoId: this.tempEnderecoId(),
-      entregadorId,
+      entregadorId: String(entregadorId),
       itens: this.tempItens(),
       pagamentos: pagamentosFinal,
       valorTotal: valorTotal,

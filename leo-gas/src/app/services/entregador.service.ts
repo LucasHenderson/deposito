@@ -1,175 +1,62 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, map, catchError, of, tap } from 'rxjs';
 import { Entregador, EntregadorFormData } from '../models/entregador.model';
 
-@Injectable({
-  providedIn: 'root'
-})
+const API_URL = 'http://localhost:8080/api/entregadores';
+
+@Injectable({ providedIn: 'root' })
 export class EntregadorService {
-  private entregadores = signal<Entregador[]>([
-    {
-      id: '1',
-      nomeCompleto: 'João Silva Santos',
-      telefone: '(63)98765-4321',
-      identificador: 'JSS',
-      salario: 1800.00,
-      ativo: true,
-      dataCadastro: new Date('2023-01-15')
-    },
-    {
-      id: '2',
-      nomeCompleto: 'Maria Oliveira Costa',
-      telefone: '(63)99876-5432',
-      identificador: 'MOC',
-      salario: 1950.00,
-      ativo: true,
-      dataCadastro: new Date('2023-02-20')
-    },
-    {
-      id: '3',
-      nomeCompleto: 'Pedro Henrique Almeida',
-      telefone: '(63)98123-4567',
-      identificador: 'PHA',
-      salario: 2100.00,
-      ativo: true,
-      dataCadastro: new Date('2023-03-10')
-    },
-    {
-      id: '4',
-      nomeCompleto: 'Ana Paula Ferreira',
-      telefone: '(63)99234-5678',
-      identificador: 'APF',
-      salario: 1750.00,
-      ativo: false,
-      dataCadastro: new Date('2023-01-25')
-    },
-    {
-      id: '5',
-      nomeCompleto: 'Carlos Eduardo Souza',
-      telefone: '(63)98345-6789',
-      identificador: 'CES',
-      salario: 2200.00,
-      ativo: true,
-      dataCadastro: new Date('2023-04-05')
-    },
-    {
-      id: '6',
-      nomeCompleto: 'Juliana Rodrigues Lima',
-      telefone: '(63)99456-7890',
-      identificador: 'JRL',
-      salario: 1900.00,
-      ativo: true,
-      dataCadastro: new Date('2023-05-12')
-    },
-    {
-      id: '7',
-      nomeCompleto: 'Rafael Santos Barbosa',
-      telefone: '(63)98567-8901',
-      identificador: 'RSB',
-      salario: 2050.00,
-      ativo: true,
-      dataCadastro: new Date('2023-06-18')
-    },
-    {
-      id: '8',
-      nomeCompleto: 'Fernanda Costa Pereira',
-      telefone: '(63)99678-9012',
-      identificador: 'FCP',
-      salario: 1850.00,
-      ativo: true,
-      dataCadastro: new Date('2023-07-22')
-    },
-    {
-      id: '9',
-      nomeCompleto: 'Lucas Martins Oliveira',
-      telefone: '(63)98789-0123',
-      identificador: 'LMO',
-      salario: 1700.00,
-      ativo: false,
-      dataCadastro: new Date('2023-02-14')
-    },
-    {
-      id: '10',
-      nomeCompleto: 'Camila Alves Ribeiro',
-      telefone: '(63)99890-1234',
-      identificador: 'CAR',
-      salario: 2000.00,
-      ativo: true,
-      dataCadastro: new Date('2023-08-30')
-    },
-    {
-      id: '11',
-      nomeCompleto: 'Bruno Henrique Dias',
-      telefone: '(63)98901-2345',
-      identificador: 'BHD',
-      salario: 1950.00,
-      ativo: true,
-      dataCadastro: new Date('2023-09-15')
-    },
-    {
-      id: '12',
-      nomeCompleto: 'Patricia Gomes Silva',
-      telefone: '(63)99012-3456',
-      identificador: 'PGS',
-      salario: 2150.00,
-      ativo: true,
-      dataCadastro: new Date('2023-10-20')
-    }
-  ]);
+  private http = inject(HttpClient);
+  private entregadores = signal<Entregador[]>([]);
 
   getEntregadores() {
     return this.entregadores.asReadonly();
   }
 
-  createEntregador(data: EntregadorFormData): boolean {
-    // Verifica se o identificador já existe
-    if (this.identificadorExists(data.identificador)) {
-      return false;
+  carregarEntregadores(): void {
+    this.http.get<Entregador[]>(API_URL).subscribe({
+      next: (list) => this.entregadores.set(list),
+      error: () => this.entregadores.set([]),
+    });
+  }
+
+  createEntregador(data: EntregadorFormData): Observable<boolean> {
+    return this.http.post<Entregador>(API_URL, data).pipe(
+      tap((novo) => this.entregadores.update((list) => [...list, novo])),
+      map(() => true),
+      catchError(() => of(false)),
+    );
+  }
+
+  updateEntregador(id: number, data: EntregadorFormData): Observable<boolean> {
+    return this.http.put<Entregador>(`${API_URL}/${id}`, data).pipe(
+      tap((atualizado) =>
+        this.entregadores.update((list) => list.map((e) => (e.id === id ? atualizado : e))),
+      ),
+      map(() => true),
+      catchError(() => of(false)),
+    );
+  }
+
+  toggleEntregadorStatus(id: number): Observable<boolean> {
+    return this.http.patch<Entregador>(`${API_URL}/${id}/toggle-status`, {}).pipe(
+      tap((atualizado) =>
+        this.entregadores.update((list) => list.map((e) => (e.id === id ? atualizado : e))),
+      ),
+      map(() => true),
+      catchError(() => of(false)),
+    );
+  }
+
+  identificadorExists(identificador: string, excludeId?: number): Observable<boolean> {
+    let url = `${API_URL}/identificador-existe?identificador=${encodeURIComponent(identificador)}`;
+    if (excludeId) {
+      url += `&excludeId=${excludeId}`;
     }
-
-    const newEntregador: Entregador = {
-      id: this.generateId(),
-      nomeCompleto: data.nomeCompleto,
-      telefone: data.telefone,
-      identificador: data.identificador,
-      salario: data.salario,
-      ativo: true,
-      dataCadastro: data.dataCadastro
-    };
-
-    this.entregadores.update(list => [...list, newEntregador]);
-    return true;
-  }
-
-  updateEntregador(id: string, data: EntregadorFormData): boolean {
-    // Verifica se o identificador já existe em outro entregador
-    const existingEntregador = this.entregadores().find(
-      e => e.identificador === data.identificador && e.id !== id
+    return this.http.get<{ existe: boolean }>(url).pipe(
+      map((res) => res.existe),
+      catchError(() => of(false)),
     );
-    
-    if (existingEntregador) {
-      return false;
-    }
-
-    this.entregadores.update(list =>
-      list.map(e => e.id === id ? { ...e, ...data } : e)
-    );
-    return true;
-  }
-
-  toggleEntregadorStatus(id: string): void {
-    this.entregadores.update(list =>
-      list.map(e => e.id === id ? { ...e, ativo: !e.ativo } : e)
-    );
-  }
-
-  identificadorExists(identificador: string, excludeId?: string): boolean {
-    return this.entregadores().some(
-      e => e.identificador.toLowerCase() === identificador.toLowerCase() && 
-           (!excludeId || e.id !== excludeId)
-    );
-  }
-
-  private generateId(): string {
-    return Date.now().toString() + Math.random().toString(36).substr(2, 9);
   }
 }

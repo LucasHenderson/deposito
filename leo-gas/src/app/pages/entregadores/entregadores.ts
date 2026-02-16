@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { EntregadorService } from '../../services/entregador.service';
@@ -13,8 +13,12 @@ type SortOrder = 'ativos-primeiro' | 'inativos-primeiro' | 'nenhum';
   templateUrl: './entregadores.html',
   styleUrl: './entregadores.css',
 })
-export class Entregadores {
+export class Entregadores implements OnInit {
   private entregadorService = inject(EntregadorService);
+
+  ngOnInit() {
+    this.entregadorService.carregarEntregadores();
+  }
 
   // Paginação
   currentPage = signal(1);
@@ -157,7 +161,12 @@ export class Entregadores {
       errors.identificador = 'Identificador deve ter até 3 letras';
     } else {
       const excludeId = this.selectedEntregador()?.id;
-      if (this.entregadorService.identificadorExists(data.identificador, excludeId)) {
+      const existe = this.entregadores().some(
+        (e) =>
+          e.identificador.toLowerCase() === data.identificador.toLowerCase() &&
+          (!excludeId || e.id !== excludeId),
+      );
+      if (existe) {
         errors.identificador = 'Este identificador já está em uso';
       }
     }
@@ -229,20 +238,23 @@ export class Entregadores {
 
     const data = this.formData();
     const isEdit = this.modalType() === 'edit';
-    const success = isEdit
+    const action$ = isEdit
       ? this.entregadorService.updateEntregador(this.selectedEntregador()!.id, data)
       : this.entregadorService.createEntregador(data);
 
-    if (success) {
-      this.closeModal();
-    }
+    action$.subscribe((success) => {
+      if (success) {
+        this.closeModal();
+      }
+    });
   }
 
   confirmDeactivate() {
     const entregador = this.selectedEntregador();
     if (entregador) {
-      this.entregadorService.toggleEntregadorStatus(entregador.id);
-      this.closeModal();
+      this.entregadorService.toggleEntregadorStatus(entregador.id).subscribe(() => {
+        this.closeModal();
+      });
     }
   }
 

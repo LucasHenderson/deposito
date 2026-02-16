@@ -214,7 +214,7 @@ export class VendaService {
   createVenda(data: VendaFormData): Venda | null {
     const cliente = this.clienteService.getClienteById(data.clienteId);
     const endereco = this.enderecoService.getEnderecoById(data.enderecoId);
-    const entregador = this.entregadorService.getEntregadores()().find(e => e.id === data.entregadorId);
+    const entregador = this.entregadorService.getEntregadores()().find(e => String(e.id) === data.entregadorId);
 
     // Verifica se tem estoque suficiente ANTES de criar a venda
     for (const item of data.itens) {
@@ -399,7 +399,7 @@ export class VendaService {
     // Atualiza os dados da venda
     const cliente = data.clienteId ? this.clienteService.getClienteById(data.clienteId) : undefined;
     const endereco = data.enderecoId ? this.enderecoService.getEnderecoById(data.enderecoId) : undefined;
-    const entregador = data.entregadorId ? this.entregadorService.getEntregadores()().find(e => e.id === data.entregadorId) : undefined;
+    const entregador = data.entregadorId ? this.entregadorService.getEntregadores()().find(e => String(e.id) === data.entregadorId) : undefined;
 
     this.vendas.update(list =>
       list.map(v => {

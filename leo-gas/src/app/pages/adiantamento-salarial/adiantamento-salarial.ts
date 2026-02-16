@@ -28,7 +28,7 @@ export class AdiantamentoSalarial {
 
   // Modal
   modalType = signal<ModalType>(null);
-  selectedEntregadorId = signal<string>('');
+  selectedEntregadorId = signal<string | number>('');
   selectedAdiantamento = signal<Adiantamento | null>(null);
 
   // Formulário
@@ -99,8 +99,8 @@ export class AdiantamentoSalarial {
   });
 
   // Obter adiantamentos filtrados por data para um entregador
-  getAdiantamentosEntregador(entregadorId: string): Adiantamento[] {
-    let items = this.adiantamentos().filter(a => a.entregadorId === entregadorId);
+  getAdiantamentosEntregador(entregadorId: string | number): Adiantamento[] {
+    let items = this.adiantamentos().filter(a => String(a.entregadorId) === String(entregadorId));
 
     const inicio = this.dataInicio();
     const fim = this.dataFim();
@@ -121,7 +121,7 @@ export class AdiantamentoSalarial {
   }
 
   // Obter adiantamentos paginados para um entregador
-  getPaginatedAdiantamentos(entregadorId: string): Adiantamento[] {
+  getPaginatedAdiantamentos(entregadorId: string | number): Adiantamento[] {
     const all = this.getAdiantamentosEntregador(entregadorId);
     const page = this.getCurrentPage(entregadorId);
     const start = (page - 1) * this.itemsPerPage;
@@ -130,44 +130,44 @@ export class AdiantamentoSalarial {
   }
 
   // Página atual de um entregador
-  getCurrentPage(entregadorId: string): number {
+  getCurrentPage(entregadorId: string | number): number {
     return this.currentPages()[entregadorId] || 1;
   }
 
   // Total de páginas de um entregador
-  getTotalPages(entregadorId: string): number {
+  getTotalPages(entregadorId: string | number): number {
     const total = this.getAdiantamentosEntregador(entregadorId).length;
     return Math.max(1, Math.ceil(total / this.itemsPerPage));
   }
 
   // Páginas para exibir na paginação
-  getPages(entregadorId: string): number[] {
+  getPages(entregadorId: string | number): number[] {
     const total = this.getTotalPages(entregadorId);
     return Array.from({ length: total }, (_, i) => i + 1);
   }
 
   // Total de gastos filtrados de um entregador
-  getTotalGastos(entregadorId: string): number {
+  getTotalGastos(entregadorId: string | number): number {
     return this.getAdiantamentosEntregador(entregadorId)
       .reduce((sum, a) => sum + a.valor, 0);
   }
 
   // Navegação de paginação
-  goToPage(entregadorId: string, page: number) {
+  goToPage(entregadorId: string | number, page: number) {
     const total = this.getTotalPages(entregadorId);
     if (page >= 1 && page <= total) {
       this.currentPages.update(pages => ({ ...pages, [entregadorId]: page }));
     }
   }
 
-  previousPage(entregadorId: string) {
+  previousPage(entregadorId: string | number) {
     const current = this.getCurrentPage(entregadorId);
     if (current > 1) {
       this.goToPage(entregadorId, current - 1);
     }
   }
 
-  nextPage(entregadorId: string) {
+  nextPage(entregadorId: string | number) {
     const current = this.getCurrentPage(entregadorId);
     if (current < this.getTotalPages(entregadorId)) {
       this.goToPage(entregadorId, current + 1);
@@ -221,7 +221,7 @@ export class AdiantamentoSalarial {
 
   // ===== MODAL CRUD =====
 
-  openCreateModal(entregadorId: string) {
+  openCreateModal(entregadorId: string | number) {
     this.selectedEntregadorId.set(entregadorId);
     this.selectedAdiantamento.set(null);
     this.resetForm();
@@ -313,13 +313,13 @@ export class AdiantamentoSalarial {
 
   // ===== HELPERS =====
 
-  getEntregadorNome(entregadorId: string): string {
-    const e = this.entregadores().find(ent => ent.id === entregadorId);
+  getEntregadorNome(entregadorId: string | number): string {
+    const e = this.entregadores().find(ent => String(ent.id) === String(entregadorId));
     return e ? e.nomeCompleto : '';
   }
 
-  getEntregadorIdentificador(entregadorId: string): string {
-    const e = this.entregadores().find(ent => ent.id === entregadorId);
+  getEntregadorIdentificador(entregadorId: string | number): string {
+    const e = this.entregadores().find(ent => String(ent.id) === String(entregadorId));
     return e ? e.identificador : '';
   }
 

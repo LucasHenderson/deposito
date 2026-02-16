@@ -1,5 +1,5 @@
 export interface Entregador {
-  id: string;
+  id: number;
   nomeCompleto: string;
   telefone: string;
   identificador: string;
