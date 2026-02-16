@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LogService } from '../../services/log.service';
@@ -12,8 +12,12 @@ type SortOrder = 'recentes' | 'antigos';
   templateUrl: './logs.html',
   styleUrl: './logs.css',
 })
-export class Logs {
+export class Logs implements OnInit {
   private logService = inject(LogService);
+
+  ngOnInit() {
+    this.logService.carregarLogs();
+  }
 
   // Paginação
   currentPage = signal(1);

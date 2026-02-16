@@ -2,7 +2,7 @@ export type LogAcao = 'criar' | 'editar' | 'excluir' | 'pendencia';
 export type LogModulo = 'Vendas' | 'Clientes' | 'Endereços';
 
 export interface LogEntry {
-  id: string;
+  id: number;
   acao: LogAcao;
   modulo: LogModulo;
   resumo: string;

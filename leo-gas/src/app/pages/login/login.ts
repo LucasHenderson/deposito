@@ -64,16 +64,15 @@ export class Login {
       return;
     }
 
-    // Simula carregamento
     this.isLoading.set(true);
 
-    setTimeout(() => {
-      if (this.authService.login(this.usuario(), this.senha())) {
+    this.authService.login(this.usuario(), this.senha()).subscribe((success) => {
+      if (success) {
         this.router.navigate([this.authService.getRotaInicial()]);
       } else {
         this.errorMessage.set('Usuário ou senha incorretos');
       }
       this.isLoading.set(false);
-    }, 1000);
+    });
   }
 }

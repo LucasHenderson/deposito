@@ -1,45 +1,39 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal, computed, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { LogEntry, LogAcao, LogModulo } from '../models/log.model';
 
-const STORAGE_KEY = 'leogas_logs';
+const API_URL = 'http://localhost:8080/api/logs';
 
 @Injectable({ providedIn: 'root' })
 export class LogService {
-  private logs = signal<LogEntry[]>(this.carregarLogs());
+  private http = inject(HttpClient);
+  private logs = signal<LogEntry[]>([]);
 
   todosLogs = computed(() =>
-    this.logs().sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime())
+    this.logs().sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()),
   );
 
-  registrar(acao: LogAcao, modulo: LogModulo, resumo: string, detalhes: string, usuario: string, detalhesAntes?: string): void {
-    const novoLog: LogEntry = {
-      id: crypto.randomUUID(),
-      acao,
-      modulo,
-      resumo,
-      detalhes,
-      detalhesAntes,
-      usuario,
-      data: new Date(),
-    };
-
-    this.logs.update((atual) => [novoLog, ...atual]);
-    this.salvar();
+  carregarLogs(): void {
+    this.http.get<LogEntry[]>(API_URL).subscribe({
+      next: (logs) => this.logs.set(logs),
+      error: () => this.logs.set([]),
+    });
   }
 
-  private salvar(): void {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(this.logs()));
-  }
+  registrar(
+    acao: LogAcao,
+    modulo: LogModulo,
+    resumo: string,
+    detalhes: string,
+    usuario: string,
+    detalhesAntes?: string,
+  ): void {
+    const body = { acao, modulo, resumo, detalhes, detalhesAntes, usuario };
 
-  private carregarLogs(): LogEntry[] {
-    try {
-      const data = localStorage.getItem(STORAGE_KEY);
-      if (data) {
-        return JSON.parse(data) as LogEntry[];
-      }
-    } catch {
-      localStorage.removeItem(STORAGE_KEY);
-    }
-    return [];
+    this.http.post<LogEntry>(API_URL, body).subscribe({
+      next: (novoLog) => {
+        this.logs.update((atual) => [novoLog, ...atual]);
+      },
+    });
   }
 }
