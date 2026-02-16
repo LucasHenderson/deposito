@@ -23,6 +23,8 @@ export class Enderecos {
   private authService = inject(AuthService);
   private logService = inject(LogService);
 
+  isAdmin = this.authService.isAdmin;
+
   // Paginação - Endereços
   currentPage = signal(1);
   itemsPerPage = signal(8);
@@ -269,7 +271,11 @@ export class Enderecos {
       const enderecoId = endereco.id;
       const oldClientes = endereco.clientesIds;
 
-      const antes = `Quadra: ${endereco.quadra}\nAlameda: ${endereco.alameda}\nQI: ${endereco.qi}\nLote: ${endereco.lote}\nCasa: ${endereco.casa || '-'}\nComplemento: ${endereco.complemento || '-'}`;
+      const clientesAntesNomes = oldClientes.map(id => {
+        const cli = this.clienteService.getClienteById(id);
+        return cli ? cli.nome : id;
+      });
+      const antes = `Quadra: ${endereco.quadra}\nAlameda: ${endereco.alameda}\nQI: ${endereco.qi}\nLote: ${endereco.lote}\nCasa: ${endereco.casa || '-'}\nComplemento: ${endereco.complemento || '-'}\nClientes: ${clientesAntesNomes.length > 0 ? clientesAntesNomes.join(', ') : 'Nenhum'}`;
 
       // Atualiza endereço
       this.enderecoService.updateEndereco(enderecoId, data);
@@ -286,7 +292,11 @@ export class Enderecos {
         }
       });
 
-      const depois = `Quadra: ${data.quadra}\nAlameda: ${data.alameda}\nQI: ${data.qi}\nLote: ${data.lote}\nCasa: ${data.casa || '-'}\nComplemento: ${data.complemento || '-'}`;
+      const clientesDepoisNomes = data.clientesIds.map(id => {
+        const cli = this.clienteService.getClienteById(id);
+        return cli ? cli.nome : id;
+      });
+      const depois = `Quadra: ${data.quadra}\nAlameda: ${data.alameda}\nQI: ${data.qi}\nLote: ${data.lote}\nCasa: ${data.casa || '-'}\nComplemento: ${data.complemento || '-'}\nClientes: ${clientesDepoisNomes.length > 0 ? clientesDepoisNomes.join(', ') : 'Nenhum'}`;
 
       this.logService.registrar('editar', 'Endereços',
         `Endereço "${enderecoLabel}" editado`,
@@ -303,9 +313,13 @@ export class Enderecos {
         this.clienteService.vincularEndereco(cliId, novoEndereco.id);
       });
 
+      const clientesCriadosNomes = data.clientesIds.map(id => {
+        const cli = this.clienteService.getClienteById(id);
+        return cli ? cli.nome : id;
+      });
       this.logService.registrar('criar', 'Endereços',
         `Endereço "${enderecoLabel}" criado`,
-        `Quadra: ${data.quadra}\nAlameda: ${data.alameda}\nQI: ${data.qi}\nLote: ${data.lote}\nCasa: ${data.casa || '-'}\nComplemento: ${data.complemento || '-'}`,
+        `Quadra: ${data.quadra}\nAlameda: ${data.alameda}\nQI: ${data.qi}\nLote: ${data.lote}\nCasa: ${data.casa || '-'}\nComplemento: ${data.complemento || '-'}\nClientes: ${clientesCriadosNomes.length > 0 ? clientesCriadosNomes.join(', ') : 'Nenhum'}`,
         usuario
       );
     }

@@ -205,6 +205,11 @@
   color: #dc2626;
 }
 
+.acao-pendencia {
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+}
+
 /* INFO DO LOG */
 
 .log-info {

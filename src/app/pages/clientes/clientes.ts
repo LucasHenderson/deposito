@@ -23,6 +23,8 @@ export class Clientes {
   private authService = inject(AuthService);
   private logService = inject(LogService);
 
+  isAdmin = this.authService.isAdmin;
+
   // Paginação
   currentPage = signal(1);
   itemsPerPage = signal(8);
@@ -363,7 +365,11 @@ export class Clientes {
       const clienteId = cliente.id;
       const oldEnderecos = cliente.enderecosIds;
 
-      const antes = `Nome: ${cliente.nome}\nTelefone: ${cliente.telefone}\nObservações: ${cliente.observacoes || 'Nenhuma'}`;
+      const enderecosAntesFormatados = oldEnderecos.map(id => {
+        const end = this.enderecoService.getEnderecoById(id);
+        return end ? this.getEnderecoFormatado(end) : id;
+      });
+      const antes = `Nome: ${cliente.nome}\nTelefone: ${cliente.telefone}\nEndereços: ${enderecosAntesFormatados.length > 0 ? enderecosAntesFormatados.join(', ') : 'Nenhum'}\nObservações: ${cliente.observacoes || 'Nenhuma'}`;
 
       // Atualiza cliente
       this.clienteService.updateCliente(clienteId, data);
@@ -380,7 +386,11 @@ export class Clientes {
         }
       });
 
-      const depois = `Nome: ${data.nome}\nTelefone: ${data.telefone}\nObservações: ${data.observacoes || 'Nenhuma'}`;
+      const enderecosDepoisFormatados = data.enderecosIds.map(id => {
+        const end = this.enderecoService.getEnderecoById(id);
+        return end ? this.getEnderecoFormatado(end) : id;
+      });
+      const depois = `Nome: ${data.nome}\nTelefone: ${data.telefone}\nEndereços: ${enderecosDepoisFormatados.length > 0 ? enderecosDepoisFormatados.join(', ') : 'Nenhum'}\nObservações: ${data.observacoes || 'Nenhuma'}`;
 
       this.logService.registrar('editar', 'Clientes',
         `Cliente "${data.nome}" editado`,
@@ -399,9 +409,13 @@ export class Clientes {
         this.enderecoService.vincularCliente(endId, novoCliente.id);
       });
 
+      const enderecosFormatadosLog = data.enderecosIds.map(id => {
+        const end = this.enderecoService.getEnderecoById(id);
+        return end ? this.getEnderecoFormatado(end) : id;
+      });
       this.logService.registrar('criar', 'Clientes',
         `Cliente "${novoCliente.nome}" criado`,
-        `Nome: ${novoCliente.nome}\nTelefone: ${novoCliente.telefone}\nObservações: ${novoCliente.observacoes || 'Nenhuma'}`,
+        `Nome: ${novoCliente.nome}\nTelefone: ${novoCliente.telefone}\nEndereços: ${enderecosFormatadosLog.length > 0 ? enderecosFormatadosLog.join(', ') : 'Nenhum'}\nObservações: ${novoCliente.observacoes || 'Nenhuma'}`,
         usuario
       );
 

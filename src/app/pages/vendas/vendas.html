@@ -199,7 +199,8 @@
                         <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                       </svg>
                     </button>
-                    <button 
+                    @if (isAdmin()) {
+                    <button
                       class="btn-action btn-delete"
                       (click)="openDeleteModal(venda)"
                       title="Excluir"
@@ -210,6 +211,7 @@
                         <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
                       </svg>
                     </button>
+                    }
                     <button 
                       class="btn-action btn-pending"
                       [class.active]="venda.recebimentoPendente"

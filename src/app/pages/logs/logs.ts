@@ -197,6 +197,7 @@ export class Logs {
       criar: 'Criação',
       editar: 'Edição',
       excluir: 'Exclusão',
+      pendencia: 'Pendência',
     };
     return labels[acao];
   }
@@ -206,6 +207,7 @@ export class Logs {
       criar: 'acao-criar',
       editar: 'acao-editar',
       excluir: 'acao-excluir',
+      pendencia: 'acao-pendencia',
     };
     return classes[acao];
   }

@@ -871,7 +871,15 @@ confirmarTogglePendente() {
       }
     }
 
+    const acaoPendente = venda.recebimentoPendente ? 'removida' : 'marcada';
     this.vendaService.toggleRecebimentoPendente(venda.id);
+
+    this.logService.registrar('pendencia', 'Vendas',
+      `Venda de ${venda.clienteNome} ${acaoPendente} como pendente — ${this.formatarMoeda(venda.valorTotal)}`,
+      `Cliente: ${venda.clienteNome}\nEndereço: ${venda.enderecoFormatado}\nValor: ${this.formatarMoeda(venda.valorTotal)}\nAção: Recebimento pendente ${acaoPendente}\nData da Venda: ${this.formatarData(venda.dataVenda)}`,
+      this.authService.usuarioLogado()?.usuario ?? 'desconhecido'
+    );
+
     this.resetAgendamento();
     this.closeModal();
   }
