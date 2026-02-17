@@ -1,12 +1,12 @@
 export interface Endereco {
-  id: string;
+  id: number;
   quadra: string;
   alameda: string;
   qi: string;
   lote: string;
   casa: string;
   complemento: string;
-  clientesIds: string[];
+  clientesIds: number[];
 }
 
 export interface EnderecoFormData {
@@ -16,7 +16,7 @@ export interface EnderecoFormData {
   lote: string;
   casa: string;
   complemento: string;
-  clientesIds: string[];
+  clientesIds: number[];
 }
 
 export interface QuadraResumo {

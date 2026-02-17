@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { VendaService } from '../../services/venda.service';
@@ -24,7 +24,7 @@ type CreateStep = 1 | 2 | 3;
   templateUrl: './vendas.html',
   styleUrl: './vendas.css',
 })
-export class Vendas {
+export class Vendas implements OnInit {
   private vendaService = inject(VendaService);
   private clienteService = inject(ClienteService);
   private enderecoService = inject(EnderecoService);
@@ -33,6 +33,11 @@ export class Vendas {
   private notificationService = inject(NotificationService);
   private authService = inject(AuthService);
   private logService = inject(LogService);
+
+  ngOnInit(): void {
+    this.clienteService.carregarClientes();
+    this.enderecoService.carregarEnderecos();
+  }
 
   isAdmin = this.authService.isAdmin;
 
@@ -272,7 +277,7 @@ export class Vendas {
   // Produto selecionado atual
   produtoSelecionado = computed(() => {
     const id = this.produtoSelecionadoId();
-    return id ? this.produtos().find(p => p.id === id) : null;
+    return id ? this.produtos().find(p => String(p.id) === id) : null;
   });
 
   // Preço do produto baseado na forma de pagamento temporária
@@ -438,7 +443,7 @@ limparFiltros() {
     const formaPagamento = this.tempFormaPagamento();
     this.tempItens.update(itens => 
       itens.map(item => {
-        const produto = this.produtos().find(p => p.id === item.produtoId);
+        const produto = this.produtos().find(p => String(p.id) === item.produtoId);
         if (produto) {
           const precoUnitario = produto.precos[formaPagamento];
           return {

@@ -1,8 +1,8 @@
 export interface Cliente {
-  id: string;
+  id: number;
   nome: string;
   telefone: string;
-  enderecosIds: string[];
+  enderecosIds: number[];
   dataCadastro: Date;
   observacoes: string;
 }
@@ -10,7 +10,7 @@ export interface Cliente {
 export interface ClienteFormData {
   nome: string;
   telefone: string;
-  enderecosIds: string[];
+  enderecosIds: number[];
   dataCadastro: Date;
   observacoes: string;
 }

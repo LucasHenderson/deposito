@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ClienteService } from '../../services/cliente.service';
@@ -17,22 +17,27 @@ type SortOrder = 'nome-asc' | 'nome-desc' | 'recentes' | 'antigos' | 'sem-compra
   templateUrl: './clientes.html',
   styleUrl: './clientes.css',
 })
-export class Clientes {
+export class Clientes implements OnInit {
   private clienteService = inject(ClienteService);
   private enderecoService = inject(EnderecoService);
   private authService = inject(AuthService);
   private logService = inject(LogService);
+
+  ngOnInit(): void {
+    this.clienteService.carregarClientes();
+    this.enderecoService.carregarEnderecos();
+  }
 
   isAdmin = this.authService.isAdmin;
 
   // Paginação
   currentPage = signal(1);
   itemsPerPage = signal(8);
-  
+
   // Modal
   modalType = signal<ModalType>(null);
   selectedCliente = signal<Cliente | null>(null);
-  
+
   // Formulário
   formData = signal<ClienteFormData>({
     nome: '',
@@ -73,11 +78,11 @@ export class Clientes {
     const search = this.enderecoSearchTerm().toLowerCase().trim();
     const selectedIds = this.formData().enderecosIds;
     let list = this.enderecos();
-    
+
     // Sempre mostrar os selecionados primeiro
     const selected = list.filter(e => selectedIds.includes(e.id));
     const notSelected = list.filter(e => !selectedIds.includes(e.id));
-    
+
     // Aplicar busca apenas nos não selecionados
     let filteredNotSelected = notSelected;
     if (search) {
@@ -86,10 +91,10 @@ export class Clientes {
         return enderecoStr.includes(search);
       });
     }
-    
+
     // Limitar quantidade para performance
     const limitedNotSelected = filteredNotSelected.slice(0, this.MAX_DISPLAY_ITEMS - selected.length);
-    
+
     return {
       items: [...selected, ...limitedNotSelected],
       totalFiltered: filteredNotSelected.length,
@@ -101,29 +106,29 @@ export class Clientes {
   filteredHistorico = computed(() => {
     const cliente = this.selectedCliente();
     if (!cliente) return [];
-    
+
     let historico = this.clienteService.getHistoricoCompras(cliente.id);
-    
+
     const dataInicio = this.historicoDataInicio();
     const dataFim = this.historicoDataFim();
-    
+
     if (dataInicio) {
       const inicio = new Date(dataInicio);
       inicio.setHours(0, 0, 0, 0);
       historico = historico.filter(h => new Date(h.dataCompra) >= inicio);
     }
-    
+
     if (dataFim) {
       const fim = new Date(dataFim);
       fim.setHours(23, 59, 59, 999);
       historico = historico.filter(h => new Date(h.dataCompra) <= fim);
     }
-    
+
     return historico;
   });
 
   // Paginação do histórico
-  historicoTotalPages = computed(() => 
+  historicoTotalPages = computed(() =>
     Math.ceil(this.filteredHistorico().length / this.historicoItemsPerPage())
   );
 
@@ -145,16 +150,16 @@ export class Clientes {
 
   filteredClientes = computed(() => {
     let list = this.clientes();
-    
+
     // Busca por nome ou telefone
     const search = this.searchTerm().toLowerCase().trim();
     if (search) {
-      list = list.filter(c => 
+      list = list.filter(c =>
         c.nome.toLowerCase().includes(search) ||
         c.telefone.includes(search)
       );
     }
-    
+
     // Ordenação
     const order = this.sortOrder();
     switch (order) {
@@ -165,12 +170,12 @@ export class Clientes {
         list = [...list].sort((a, b) => b.nome.localeCompare(a.nome));
         break;
       case 'recentes':
-        list = [...list].sort((a, b) => 
+        list = [...list].sort((a, b) =>
           new Date(b.dataCadastro).getTime() - new Date(a.dataCadastro).getTime()
         );
         break;
       case 'antigos':
-        list = [...list].sort((a, b) => 
+        list = [...list].sort((a, b) =>
           new Date(a.dataCadastro).getTime() - new Date(b.dataCadastro).getTime()
         );
         break;
@@ -179,11 +184,11 @@ export class Clientes {
           .filter(c => list.some(l => l.id === c.id));
         break;
     }
-    
+
     return list;
   });
 
-  totalPages = computed(() => 
+  totalPages = computed(() =>
     Math.ceil(this.filteredClientes().length / this.itemsPerPage())
   );
 
@@ -199,7 +204,7 @@ export class Clientes {
   });
 
   // ===== AÇÕES DE MODAL =====
-  
+
   openCreateModal() {
     this.resetForm();
     this.textoGerado.set('');
@@ -258,11 +263,11 @@ export class Clientes {
   updateTelefone(event: Event) {
     const input = event.target as HTMLInputElement;
     let value = input.value.replace(/\D/g, '');
-    
+
     if (value.length > 11) {
       value = value.slice(0, 11);
     }
-    
+
     // Formata o telefone
     if (value.length > 6) {
       value = `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7)}`;
@@ -271,7 +276,7 @@ export class Clientes {
     } else if (value.length > 0) {
       value = `(${value}`;
     }
-    
+
     this.formData.update(data => ({ ...data, telefone: value }));
   }
 
@@ -285,7 +290,7 @@ export class Clientes {
     this.formData.update(data => ({ ...data, dataCadastro: new Date(input.value) }));
   }
 
-  toggleEndereco(enderecoId: string) {
+  toggleEndereco(enderecoId: number) {
     this.formData.update(data => {
       const enderecosIds = data.enderecosIds.includes(enderecoId)
         ? data.enderecosIds.filter(id => id !== enderecoId)
@@ -298,12 +303,12 @@ export class Clientes {
   updateEnderecoSearch(event: Event) {
     const input = event.target as HTMLInputElement;
     const value = input.value;
-    
+
     // Limpa timer anterior
     if (this.enderecoSearchDebounceTimer) {
       clearTimeout(this.enderecoSearchDebounceTimer);
     }
-    
+
     // Debounce de 300ms
     this.enderecoSearchDebounceTimer = setTimeout(() => {
       this.enderecoSearchTerm.set(value);
@@ -357,72 +362,61 @@ export class Clientes {
   handleSubmit() {
     const data = this.formData();
     const isEdit = this.modalType() === 'edit';
-    
+
     const usuario = this.authService.usuarioLogado()?.usuario ?? 'desconhecido';
 
     if (isEdit) {
       const cliente = this.selectedCliente()!;
       const clienteId = cliente.id;
-      const oldEnderecos = cliente.enderecosIds;
 
-      const enderecosAntesFormatados = oldEnderecos.map(id => {
+      const enderecosAntesFormatados = cliente.enderecosIds.map(id => {
         const end = this.enderecoService.getEnderecoById(id);
-        return end ? this.getEnderecoFormatado(end) : id;
+        return end ? this.getEnderecoFormatado(end) : String(id);
       });
       const antes = `Nome: ${cliente.nome}\nTelefone: ${cliente.telefone}\nEndereços: ${enderecosAntesFormatados.length > 0 ? enderecosAntesFormatados.join(', ') : 'Nenhum'}\nObservações: ${cliente.observacoes || 'Nenhuma'}`;
 
-      // Atualiza cliente
-      this.clienteService.updateCliente(clienteId, data);
+      this.clienteService.updateCliente(clienteId, data).subscribe(success => {
+        if (success) {
+          const enderecosDepoisFormatados = data.enderecosIds.map(id => {
+            const end = this.enderecoService.getEnderecoById(id);
+            return end ? this.getEnderecoFormatado(end) : String(id);
+          });
+          const depois = `Nome: ${data.nome}\nTelefone: ${data.telefone}\nEndereços: ${enderecosDepoisFormatados.length > 0 ? enderecosDepoisFormatados.join(', ') : 'Nenhum'}\nObservações: ${data.observacoes || 'Nenhuma'}`;
 
-      // Atualiza vínculos nos endereços
-      oldEnderecos.forEach(endId => {
-        if (!data.enderecosIds.includes(endId)) {
-          this.enderecoService.desvincularCliente(endId, clienteId);
+          this.logService.registrar('editar', 'Clientes',
+            `Cliente "${data.nome}" editado`,
+            depois,
+            usuario,
+            antes
+          );
+
+          // Recarregar endereços para refletir mudanças de vínculos
+          this.enderecoService.carregarEnderecos();
+          this.closeModal();
         }
       });
-      data.enderecosIds.forEach(endId => {
-        if (!oldEnderecos.includes(endId)) {
-          this.enderecoService.vincularCliente(endId, clienteId);
-        }
-      });
-
-      const enderecosDepoisFormatados = data.enderecosIds.map(id => {
-        const end = this.enderecoService.getEnderecoById(id);
-        return end ? this.getEnderecoFormatado(end) : id;
-      });
-      const depois = `Nome: ${data.nome}\nTelefone: ${data.telefone}\nEndereços: ${enderecosDepoisFormatados.length > 0 ? enderecosDepoisFormatados.join(', ') : 'Nenhum'}\nObservações: ${data.observacoes || 'Nenhuma'}`;
-
-      this.logService.registrar('editar', 'Clientes',
-        `Cliente "${data.nome}" editado`,
-        depois,
-        usuario,
-        antes
-      );
-
-      this.closeModal();
     } else {
-      // Cria novo cliente
-      const novoCliente = this.clienteService.createCliente(data);
+      this.clienteService.createCliente(data).subscribe(novoCliente => {
+        if (novoCliente) {
+          const enderecosFormatadosLog = data.enderecosIds.map(id => {
+            const end = this.enderecoService.getEnderecoById(id);
+            return end ? this.getEnderecoFormatado(end) : String(id);
+          });
+          this.logService.registrar('criar', 'Clientes',
+            `Cliente "${novoCliente.nome}" criado`,
+            `Nome: ${novoCliente.nome}\nTelefone: ${novoCliente.telefone}\nEndereços: ${enderecosFormatadosLog.length > 0 ? enderecosFormatadosLog.join(', ') : 'Nenhum'}\nObservações: ${novoCliente.observacoes || 'Nenhuma'}`,
+            usuario
+          );
 
-      // Vincula aos endereços selecionados
-      data.enderecosIds.forEach(endId => {
-        this.enderecoService.vincularCliente(endId, novoCliente.id);
+          // Recarregar endereços para refletir novos vínculos
+          this.enderecoService.carregarEnderecos();
+
+          // Gera texto de cadastro
+          const enderecosFormatados = this.getEnderecosFormatados(data.enderecosIds);
+          const texto = this.clienteService.gerarTextoCadastro(novoCliente, enderecosFormatados);
+          this.textoGerado.set(texto);
+        }
       });
-
-      const enderecosFormatadosLog = data.enderecosIds.map(id => {
-        const end = this.enderecoService.getEnderecoById(id);
-        return end ? this.getEnderecoFormatado(end) : id;
-      });
-      this.logService.registrar('criar', 'Clientes',
-        `Cliente "${novoCliente.nome}" criado`,
-        `Nome: ${novoCliente.nome}\nTelefone: ${novoCliente.telefone}\nEndereços: ${enderecosFormatadosLog.length > 0 ? enderecosFormatadosLog.join(', ') : 'Nenhum'}\nObservações: ${novoCliente.observacoes || 'Nenhuma'}`,
-        usuario
-      );
-
-      // Gera texto de cadastro
-      const enderecosFormatados = this.getEnderecosFormatados(data.enderecosIds);
-      const texto = this.clienteService.gerarTextoCadastro(novoCliente, enderecosFormatados);
-      this.textoGerado.set(texto);
     }
   }
 
@@ -435,19 +429,19 @@ export class Clientes {
         this.authService.usuarioLogado()?.usuario ?? 'desconhecido'
       );
 
-      // Remove vínculos dos endereços
-      this.enderecoService.removerClienteDeTodosEnderecos(cliente.id);
-
-      // Exclui cliente
-      this.clienteService.deleteCliente(cliente.id);
-
-      this.closeModal();
+      this.clienteService.deleteCliente(cliente.id).subscribe(success => {
+        if (success) {
+          // Atualiza signal local dos endereços para remover o cliente
+          this.enderecoService.removerClienteDeTodosEnderecos(cliente.id);
+          this.closeModal();
+        }
+      });
     }
   }
 
   // ===== HELPERS =====
 
-  getEnderecosDoCliente(enderecosIds: string[]): Endereco[] {
+  getEnderecosDoCliente(enderecosIds: number[]): Endereco[] {
     return this.enderecoService.getEnderecosByIds(enderecosIds);
   }
 
@@ -455,7 +449,7 @@ export class Clientes {
     return this.enderecoService.getEnderecoFormatado(endereco);
   }
 
-  getEnderecosFormatados(enderecosIds: string[]): string[] {
+  getEnderecosFormatados(enderecosIds: number[]): string[] {
     return enderecosIds.map(id => {
       const endereco = this.enderecoService.getEnderecoById(id);
       return endereco ? this.getEnderecoFormatado(endereco) : '';
@@ -468,7 +462,7 @@ export class Clientes {
     return this.clienteService.getHistoricoCompras(cliente.id);
   }
 
-  getUltimaCompra(clienteId: string): HistoricoCompra | undefined {
+  getUltimaCompra(clienteId: number): HistoricoCompra | undefined {
     return this.clienteService.getUltimaCompra(clienteId);
   }
 
@@ -476,7 +470,7 @@ export class Clientes {
     return this.clienteService.getWhatsAppLink(telefone);
   }
 
-  getClientesVinculadosAoEndereco(enderecoId: string): Cliente[] {
+  getClientesVinculadosAoEndereco(enderecoId: number): Cliente[] {
     const endereco = this.enderecoService.getEnderecoById(enderecoId);
     if (!endereco) return [];
     return this.clienteService.getClientesByIds(endereco.clientesIds);
@@ -492,11 +486,11 @@ export class Clientes {
   copiarResumoCliente() {
     const cliente = this.selectedCliente();
     if (!cliente) return;
-    
+
     const enderecos = this.getEnderecosFormatados(cliente.enderecosIds);
     const historico = this.getHistoricoCliente();
     const texto = this.clienteService.gerarTextoResumo(cliente, enderecos, historico);
-    
+
     this.copiarTexto(texto);
   }
 

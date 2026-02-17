@@ -1,123 +1,47 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, map, tap, catchError, of } from 'rxjs';
 import { Endereco, EnderecoFormData, QuadraResumo } from '../models/endereco.model';
+
+const API_URL = 'http://localhost:8080/api/enderecos';
+
+// Interface para o formato de resposta do backend
+interface EnderecoBackend {
+  id: number;
+  quadra: string;
+  alameda: string;
+  qi: string;
+  lote: string;
+  casa: string;
+  complemento: string;
+  clientesIds: number[];
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class EnderecoService {
-  private enderecos = signal<Endereco[]>([
-    {
-      id: '1',
-      quadra: '104 Norte',
-      alameda: '01',
-      qi: '',
-      lote: '15',
-      casa: 'A',
-      complemento: 'Próximo ao mercado',
-      clientesIds: ['1', '2']
-    },
-    {
-      id: '2',
-      quadra: '104 Norte',
-      alameda: '03',
-      qi: '',
-      lote: '22',
-      casa: '',
-      complemento: '',
-      clientesIds: ['3']
-    },
-    {
-      id: '3',
-      quadra: '104 Norte',
-      alameda: '05',
-      qi: '',
-      lote: '08',
-      casa: 'B',
-      complemento: 'Casa azul',
-      clientesIds: ['4']
-    },
-    {
-      id: '4',
-      quadra: '110 Norte',
-      alameda: '02',
-      qi: '',
-      lote: '30',
-      casa: '',
-      complemento: 'Esquina',
-      clientesIds: ['5', '6']
-    },
-    {
-      id: '5',
-      quadra: '110 Norte',
-      alameda: '10',
-      qi: 'QI-05',
-      lote: '12',
-      casa: 'C',
-      complemento: '',
-      clientesIds: ['7']
-    },
-    {
-      id: '6',
-      quadra: '203 Sul',
-      alameda: '04',
-      qi: '',
-      lote: '18',
-      casa: '',
-      complemento: 'Portão verde',
-      clientesIds: ['8', '9']
-    },
-    {
-      id: '7',
-      quadra: '203 Sul',
-      alameda: '08',
-      qi: '',
-      lote: '25',
-      casa: 'A',
-      complemento: '',
-      clientesIds: ['10']
-    },
-    {
-      id: '8',
-      quadra: '305 Sul',
-      alameda: '01',
-      qi: 'QI-02',
-      lote: '05',
-      casa: '',
-      complemento: 'Ao lado da padaria',
-      clientesIds: ['1', '11']
-    },
-    {
-      id: '9',
-      quadra: '305 Sul',
-      alameda: '06',
-      qi: '',
-      lote: '14',
-      casa: 'B',
-      complemento: '',
-      clientesIds: ['12']
-    },
-    {
-      id: '10',
-      quadra: '408 Norte',
-      alameda: '12',
-      qi: '',
-      lote: '33',
-      casa: '',
-      complemento: 'Casa de esquina amarela',
-      clientesIds: ['3', '5']
-    }
-  ]);
+  private http = inject(HttpClient);
+  private enderecos = signal<Endereco[]>([]);
 
   getEnderecos() {
     return this.enderecos.asReadonly();
   }
 
-  getEnderecoById(id: string): Endereco | undefined {
-    return this.enderecos().find(e => e.id === id);
+  carregarEnderecos(): void {
+    this.http.get<EnderecoBackend[]>(API_URL).subscribe(data => {
+      this.enderecos.set(data.map(e => this.fromBackend(e)));
+    });
   }
 
-  getEnderecosByIds(ids: string[]): Endereco[] {
-    return this.enderecos().filter(e => ids.includes(e.id));
+  getEnderecoById(id: string | number): Endereco | undefined {
+    const numId = Number(id);
+    return this.enderecos().find(e => e.id === numId);
+  }
+
+  getEnderecosByIds(ids: (string | number)[]): Endereco[] {
+    const numIds = ids.map(id => Number(id));
+    return this.enderecos().filter(e => numIds.includes(e.id));
   }
 
   getEnderecoFormatado(endereco: Endereco): string {
@@ -133,7 +57,7 @@ export class EnderecoService {
 
   getQuadrasResumo(): QuadraResumo[] {
     const quadrasMap = new Map<string, number>();
-    
+
     this.enderecos().forEach(endereco => {
       if (endereco.quadra) {
         const count = quadrasMap.get(endereco.quadra) || 0;
@@ -149,57 +73,43 @@ export class EnderecoService {
     return resumo.sort((a, b) => b.totalEnderecos - a.totalEnderecos);
   }
 
-  createEndereco(data: EnderecoFormData): Endereco {
-    const newEndereco: Endereco = {
-      id: this.generateId(),
-      ...data
-    };
-
-    this.enderecos.update(list => [...list, newEndereco]);
-    return newEndereco;
-  }
-
-  updateEndereco(id: string, data: EnderecoFormData): boolean {
-    this.enderecos.update(list =>
-      list.map(e => e.id === id ? { ...e, ...data } : e)
-    );
-    return true;
-  }
-
-  deleteEndereco(id: string): string[] {
-    const endereco = this.enderecos().find(e => e.id === id);
-    const clientesAfetados = endereco?.clientesIds || [];
-    
-    this.enderecos.update(list => list.filter(e => e.id !== id));
-    return clientesAfetados;
-  }
-
-  // Adiciona cliente ao endereço
-  vincularCliente(enderecoId: string, clienteId: string): void {
-    this.enderecos.update(list =>
-      list.map(e => {
-        if (e.id === enderecoId && !e.clientesIds.includes(clienteId)) {
-          return { ...e, clientesIds: [...e.clientesIds, clienteId] };
-        }
-        return e;
-      })
+  createEndereco(data: EnderecoFormData): Observable<Endereco | null> {
+    const request = this.toBackendRequest(data);
+    return this.http.post<EnderecoBackend>(API_URL, request).pipe(
+      tap(novo => {
+        this.enderecos.update(list => [...list, this.fromBackend(novo)]);
+      }),
+      map(novo => this.fromBackend(novo)),
+      catchError(() => of(null))
     );
   }
 
-  // Remove cliente do endereço
-  desvincularCliente(enderecoId: string, clienteId: string): void {
-    this.enderecos.update(list =>
-      list.map(e => {
-        if (e.id === enderecoId) {
-          return { ...e, clientesIds: e.clientesIds.filter(id => id !== clienteId) };
-        }
-        return e;
-      })
+  updateEndereco(id: number, data: EnderecoFormData): Observable<boolean> {
+    const request = this.toBackendRequest(data);
+    return this.http.put<EnderecoBackend>(`${API_URL}/${id}`, request).pipe(
+      tap(atualizado => {
+        this.enderecos.update(list =>
+          list.map(e => e.id === id ? this.fromBackend(atualizado) : e)
+        );
+      }),
+      map(() => true),
+      catchError(() => of(false))
     );
   }
 
-  // Remove cliente de todos os endereços
-  removerClienteDeTodosEnderecos(clienteId: string): void {
+  deleteEndereco(id: number): Observable<boolean> {
+    return this.http.delete<void>(`${API_URL}/${id}`).pipe(
+      tap(() => {
+        this.enderecos.update(list => list.filter(e => e.id !== id));
+      }),
+      map(() => true),
+      catchError(() => of(false))
+    );
+  }
+
+  // Atualiza o signal local removendo um cliente de todos os endereços
+  // (usado quando um cliente é deletado, para manter consistência local)
+  removerClienteDeTodosEnderecos(clienteId: number): void {
     this.enderecos.update(list =>
       list.map(e => ({
         ...e,
@@ -208,7 +118,28 @@ export class EnderecoService {
     );
   }
 
-  private generateId(): string {
-    return Date.now().toString() + Math.random().toString(36).substr(2, 9);
+  private fromBackend(e: EnderecoBackend): Endereco {
+    return {
+      id: e.id,
+      quadra: e.quadra,
+      alameda: e.alameda,
+      qi: e.qi || '',
+      lote: e.lote,
+      casa: e.casa || '',
+      complemento: e.complemento || '',
+      clientesIds: e.clientesIds || []
+    };
+  }
+
+  private toBackendRequest(data: EnderecoFormData): any {
+    return {
+      quadra: data.quadra,
+      alameda: data.alameda,
+      qi: data.qi || '',
+      lote: data.lote,
+      casa: data.casa || '',
+      complemento: data.complemento || '',
+      clientesIds: data.clientesIds
+    };
   }
 }

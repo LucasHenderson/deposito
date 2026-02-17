@@ -8,7 +8,7 @@ export interface PrecoPorPagamento {
 export type TipoInteracaoEstoque = 'reduz' | 'nao-altera' | 'aumenta';
 
 export interface VinculoEstoque {
-  variavelEstoqueId: string;
+  variavelEstoqueId: number;
   tipoInteracao: TipoInteracaoEstoque;
 }
 
@@ -22,7 +22,7 @@ export interface RegistroVenda {
 }
 
 export interface Produto {
-  id: string;
+  id: number;
   nome: string;
   precos: PrecoPorPagamento;
   vinculos: VinculoEstoque[];

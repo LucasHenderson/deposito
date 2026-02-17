@@ -1,104 +1,82 @@
-import { Injectable, signal } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, map, tap, catchError, of } from 'rxjs';
 import { VariavelEstoque, VariavelEstoqueFormData } from '../models/variavel-estoque.model';
+
+const API_URL = 'http://localhost:8080/api/variaveis-estoque';
 
 @Injectable({
   providedIn: 'root'
 })
 export class VariavelEstoqueService {
-  private variaveis = signal<VariavelEstoque[]>([
-    {
-      id: '1',
-      nome: 'Gás P13',
-      quantidade: 70
-    },
-    {
-      id: '2',
-      nome: 'Água 20L',
-      quantidade: 100
-    },
-    {
-      id: '3',
-      nome: 'Registro/Mangueira',
-      quantidade: 15
-    },
-    {
-      id: '4',
-      nome: 'Brindes',
-      quantidade: 50
-    }
-  ]);
+  private http = inject(HttpClient);
+  private variaveis = signal<VariavelEstoque[]>([]);
 
   getVariaveis() {
     return this.variaveis.asReadonly();
   }
 
-  getVariavelById(id: string): VariavelEstoque | undefined {
-    return this.variaveis().find(v => v.id === id);
+  carregarVariaveis(): void {
+    this.http.get<VariavelEstoque[]>(API_URL).subscribe(data => {
+      this.variaveis.set(data);
+    });
   }
 
-  createVariavel(data: VariavelEstoqueFormData): boolean {
-    // Verifica se já existe uma variável com o mesmo nome
-    const exists = this.variaveis().some(
-      v => v.nome.toLowerCase() === data.nome.toLowerCase()
-    );
-    
-    if (exists) {
-      return false;
-    }
-
-    const newVariavel: VariavelEstoque = {
-      id: this.generateId(),
-      nome: data.nome,
-      quantidade: data.quantidade
-    };
-
-    this.variaveis.update(list => [...list, newVariavel]);
-    return true;
+  getVariavelById(id: number | string): VariavelEstoque | undefined {
+    return this.variaveis().find(v => v.id === Number(id));
   }
 
-  updateVariavel(id: string, data: VariavelEstoqueFormData): boolean {
-    // Verifica se o nome já existe em outra variável
-    const exists = this.variaveis().some(
-      v => v.nome.toLowerCase() === data.nome.toLowerCase() && v.id !== id
+  createVariavel(data: VariavelEstoqueFormData): Observable<boolean> {
+    return this.http.post<VariavelEstoque>(API_URL, data).pipe(
+      tap(nova => {
+        this.variaveis.update(list => [...list, nova]);
+      }),
+      map(() => true),
+      catchError(() => of(false))
     );
-    
-    if (exists) {
-      return false;
-    }
-
-    this.variaveis.update(list =>
-      list.map(v => v.id === id ? { ...v, ...data } : v)
-    );
-    return true;
   }
 
-  deleteVariavel(id: string): boolean {
-    // Aqui poderia verificar se há produtos vinculados antes de excluir
-    this.variaveis.update(list => list.filter(v => v.id !== id));
-    return true;
+  updateVariavel(id: number, data: VariavelEstoqueFormData): Observable<boolean> {
+    return this.http.put<VariavelEstoque>(`${API_URL}/${id}`, data).pipe(
+      tap(atualizada => {
+        this.variaveis.update(list =>
+          list.map(v => v.id === id ? atualizada : v)
+        );
+      }),
+      map(() => true),
+      catchError(() => of(false))
+    );
+  }
+
+  deleteVariavel(id: number): Observable<boolean> {
+    return this.http.delete<void>(`${API_URL}/${id}`).pipe(
+      tap(() => {
+        this.variaveis.update(list => list.filter(v => v.id !== id));
+      }),
+      map(() => true),
+      catchError(() => of(false))
+    );
   }
 
   // Método para reduzir estoque quando uma venda é realizada
-  reduzirEstoque(id: string, quantidade: number): boolean {
-    const variavel = this.variaveis().find(v => v.id === id);
+  reduzirEstoque(id: number | string, quantidade: number): boolean {
+    const varId = Number(id);
+    const variavel = this.variaveis().find(v => v.id === varId);
     if (!variavel || variavel.quantidade < quantidade) {
       return false;
     }
 
     this.variaveis.update(list =>
-      list.map(v => v.id === id ? { ...v, quantidade: v.quantidade - quantidade } : v)
+      list.map(v => v.id === varId ? { ...v, quantidade: v.quantidade - quantidade } : v)
     );
     return true;
   }
 
   // Método para aumentar estoque
-  aumentarEstoque(id: string, quantidade: number): void {
+  aumentarEstoque(id: number | string, quantidade: number): void {
+    const varId = Number(id);
     this.variaveis.update(list =>
-      list.map(v => v.id === id ? { ...v, quantidade: v.quantidade + quantidade } : v)
+      list.map(v => v.id === varId ? { ...v, quantidade: v.quantidade + quantidade } : v)
     );
-  }
-
-  private generateId(): string {
-    return Date.now().toString() + Math.random().toString(36).substr(2, 9);
   }
 }

@@ -218,7 +218,7 @@ export class VendaService {
 
     // Verifica se tem estoque suficiente ANTES de criar a venda
     for (const item of data.itens) {
-      const produto = this.produtoService.getProdutos()().find(p => p.id === item.produtoId);
+      const produto = this.produtoService.getProdutos()().find(p => String(p.id) === item.produtoId);
       if (!produto) {
         console.error(`Produto ${item.produtoId} não encontrado`);
         return null;
@@ -258,7 +258,7 @@ export class VendaService {
 
     // Processa cada item da venda
     data.itens.forEach((item, index) => {
-      const produto = this.produtoService.getProdutos()().find(p => p.id === item.produtoId);
+      const produto = this.produtoService.getProdutos()().find(p => String(p.id) === item.produtoId);
       if (!produto) return;
 
       // 1. REDUZ ESTOQUE das variáveis vinculadas ao produto
@@ -324,7 +324,7 @@ export class VendaService {
     if (data.itens && data.itens.length > 0) {
       // 1. REVERTE as alterações dos itens originais (APENAS ESTOQUE)
       for (const itemOriginal of vendaOriginal.itens) {
-        const produto = this.produtoService.getProdutos()().find(p => p.id === itemOriginal.produtoId);
+        const produto = this.produtoService.getProdutos()().find(p => String(p.id) === itemOriginal.produtoId);
         if (!produto) continue;
 
         // Reverte APENAS o estoque (não mexe nos contadores de vendas)
@@ -351,7 +351,7 @@ export class VendaService {
       // 2. APLICA as novas alterações (APENAS ESTOQUE E HISTÓRICO)
       // Usa índice para garantir IDs únicos mesmo com produtos duplicados
       data.itens.forEach((novoItem, index) => {
-        const produto = this.produtoService.getProdutos()().find(p => p.id === novoItem.produtoId);
+        const produto = this.produtoService.getProdutos()().find(p => String(p.id) === novoItem.produtoId);
         if (!produto) return;
 
         // Aplica novo estoque
@@ -458,7 +458,7 @@ export class VendaService {
 
     // REVERTE todas as operações para cada item da venda
     for (const item of venda.itens) {
-      const produto = this.produtoService.getProdutos()().find(p => p.id === item.produtoId);
+      const produto = this.produtoService.getProdutos()().find(p => String(p.id) === item.produtoId);
       if (!produto) continue;
 
       // 1. REVERTE O ESTOQUE - Devolve ao estoque

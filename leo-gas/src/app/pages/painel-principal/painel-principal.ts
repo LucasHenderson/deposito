@@ -250,7 +250,7 @@ export class PainelPrincipal implements OnInit {
       vendas.forEach(venda => {
         const key = this.getDateKey(new Date(venda.dataVenda), 'dia');
         venda.itens.forEach(item => {
-          const produto = produtosVinculados.find(p => p.id === item.produtoId);
+          const produto = produtosVinculados.find(p => String(p.id) === item.produtoId);
           if (produto) {
             const vinculo = produto.vinculos.find(v => v.variavelEstoqueId === variavel.id);
             if (vinculo) {
@@ -266,7 +266,7 @@ export class PainelPrincipal implements OnInit {
       let estoqueCorrente = estoqueAtualVal;
       vendas.filter(v => new Date(v.dataVenda) > dataFim).forEach(venda => {
         venda.itens.forEach(item => {
-          const produto = produtosVinculados.find(p => p.id === item.produtoId);
+          const produto = produtosVinculados.find(p => String(p.id) === item.produtoId);
           if (produto) {
             const vinculo = produto.vinculos.find(v => v.variavelEstoqueId === variavel.id);
             if (vinculo) {
@@ -339,7 +339,7 @@ export class PainelPrincipal implements OnInit {
 
     return selecionadas.map((quadra, idx) => {
       const enderecosQuadra = this.enderecos().filter(e => e.quadra === quadra);
-      const clientesIdsQuadra = new Set<string>();
+      const clientesIdsQuadra = new Set<number>();
       enderecosQuadra.forEach(e => e.clientesIds.forEach(id => clientesIdsQuadra.add(id)));
       const clientesQuadra = this.clientes().filter(c => clientesIdsQuadra.has(c.id));
 
@@ -370,7 +370,7 @@ export class PainelPrincipal implements OnInit {
 
   clienteSelecionado = computed(() => {
     const id = this.clienteSelecionadoId();
-    return id ? this.clientes().find(c => c.id === id) || null : null;
+    return id ? this.clientes().find(c => String(c.id) === id) || null : null;
   });
 
   clienteChartData = computed(() => {
@@ -461,6 +461,9 @@ export class PainelPrincipal implements OnInit {
 
   // ==================== LIFECYCLE ====================
   ngOnInit() {
+    this.clienteService.carregarClientes();
+    this.enderecoService.carregarEnderecos();
+
     const now = new Date();
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
     const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
@@ -517,10 +520,10 @@ export class PainelPrincipal implements OnInit {
   getCorQuadra(quadra: string): string { const idx = this.quadrasSelecionadas().indexOf(quadra); return idx >= 0 ? this.CORES_QUADRAS[idx] : '#ccc'; }
   removeQuadra(quadra: string) { this.quadrasSelecionadas.update(list => list.filter(q => q !== quadra)); }
 
-  selecionarCliente(id: string) {
-    this.clienteSelecionadoId.set(id);
+  selecionarCliente(id: string | number) {
+    this.clienteSelecionadoId.set(String(id));
     this.showClienteDropdown.set(false);
-    const cliente = this.clientes().find(c => c.id === id);
+    const cliente = this.clientes().find(c => String(c.id) === String(id));
     if (cliente) this.clienteSearchTerm.set(cliente.nome);
   }
 
@@ -601,5 +604,5 @@ export class PainelPrincipal implements OnInit {
 
   trackByIndex(index: number): number { return index; }
   trackByQuadra(index: number, item: { quadra: string }): string { return item.quadra; }
-  trackById(index: number, item: { id: string }): string { return item.id; }
+  trackById(index: number, item: { id: string | number }): string { return String(item.id); }
 }

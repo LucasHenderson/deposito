@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProdutoService } from '../../services/produto.service';
@@ -15,9 +15,14 @@ type SortOrder = 'maior-vendas' | 'menor-vendas' | 'nenhum';
   templateUrl: './produtos.html',
   styleUrl: './produtos.css',
 })
-export class Produtos {
+export class Produtos implements OnInit {
   private produtoService = inject(ProdutoService);
   private variavelEstoqueService = inject(VariavelEstoqueService);
+
+  ngOnInit(): void {
+    this.produtoService.carregarProdutos();
+    this.variavelEstoqueService.carregarVariaveis();
+  }
 
   // Paginação
   currentPage = signal(1);
@@ -95,12 +100,12 @@ export class Produtos {
     // Ordenação por vendas
     const order = this.sortOrder();
     if (order === 'maior-vendas') {
-      list = [...list].sort((a, b) => 
-        (vendasMap.get(b.id) || 0) - (vendasMap.get(a.id) || 0)
+      list = [...list].sort((a, b) =>
+        (vendasMap.get(String(b.id)) || 0) - (vendasMap.get(String(a.id)) || 0)
       );
     } else if (order === 'menor-vendas') {
-      list = [...list].sort((a, b) => 
-        (vendasMap.get(a.id) || 0) - (vendasMap.get(b.id) || 0)
+      list = [...list].sort((a, b) =>
+        (vendasMap.get(String(a.id)) || 0) - (vendasMap.get(String(b.id)) || 0)
       );
     }
     
@@ -331,7 +336,7 @@ export class Produtos {
     const select = event.target as HTMLSelectElement;
     this.formData.update(data => {
       const vinculos = [...data.vinculos];
-      vinculos[index] = { ...vinculos[index], variavelEstoqueId: select.value };
+      vinculos[index] = { ...vinculos[index], variavelEstoqueId: Number(select.value) };
       return { ...data, vinculos };
     });
   }
@@ -345,15 +350,15 @@ export class Produtos {
     });
   }
 
-  getVariavelNome(variavelId: string): string {
+  getVariavelNome(variavelId: number): string {
     const variavel = this.variaveis().find(v => v.id === variavelId);
     return variavel?.nome || 'Desconhecido';
   }
 
-  getVinculosDisponiveis(currentVinculoId?: string): VariavelEstoque[] {
+  getVinculosDisponiveis(currentVinculoId?: number): VariavelEstoque[] {
     const vinculosAtuais = this.formData().vinculos;
-    return this.variaveis().filter(v => 
-      v.id === currentVinculoId || 
+    return this.variaveis().filter(v =>
+      v.id === currentVinculoId ||
       !vinculosAtuais.some(vinculo => vinculo.variavelEstoqueId === v.id)
     );
   }
@@ -367,21 +372,24 @@ export class Produtos {
 
     const data = this.formData();
     const isEdit = this.modalType() === 'edit';
-    
-    if (isEdit) {
-      this.produtoService.updateProduto(this.selectedProduto()!.id, data);
-    } else {
-      this.produtoService.createProduto(data);
-    }
 
-    this.closeModal();
+    if (isEdit) {
+      this.produtoService.updateProduto(this.selectedProduto()!.id, data).subscribe(success => {
+        if (success) this.closeModal();
+      });
+    } else {
+      this.produtoService.createProduto(data).subscribe(success => {
+        if (success) this.closeModal();
+      });
+    }
   }
 
   confirmDelete() {
     const produto = this.selectedProduto();
     if (produto) {
-      this.produtoService.deleteProduto(produto.id);
-      this.closeModal();
+      this.produtoService.deleteProduto(produto.id).subscribe(success => {
+        if (success) this.closeModal();
+      });
     }
   }
 
@@ -394,30 +402,37 @@ export class Produtos {
 
     const data = this.variavelFormData();
     const isEdit = this.modalType() === 'edit-variavel';
-    
-    let success: boolean;
+
     if (isEdit) {
-      success = this.variavelEstoqueService.updateVariavel(this.selectedVariavel()!.id, data);
+      this.variavelEstoqueService.updateVariavel(this.selectedVariavel()!.id, data).subscribe(success => {
+        if (!success) {
+          this.variavelFormErrors.update(errors => ({
+            ...errors,
+            nome: 'Já existe uma variável com este nome'
+          }));
+          return;
+        }
+        this.closeModal();
+      });
     } else {
-      success = this.variavelEstoqueService.createVariavel(data);
+      this.variavelEstoqueService.createVariavel(data).subscribe(success => {
+        if (!success) {
+          this.variavelFormErrors.update(errors => ({
+            ...errors,
+            nome: 'Já existe uma variável com este nome'
+          }));
+          return;
+        }
+        this.closeModal();
+      });
     }
-
-    if (!success) {
-      this.variavelFormErrors.update(errors => ({
-        ...errors,
-        nome: 'Já existe uma variável com este nome'
-      }));
-      return;
-    }
-
-    this.closeModal();
   }
 
   confirmDeleteVariavel() {
     const variavel = this.selectedVariavel();
     if (variavel) {
       // Verifica se há produtos vinculados
-      const produtosVinculados = this.produtos().filter(p => 
+      const produtosVinculados = this.produtos().filter(p =>
         p.vinculos.some(v => v.variavelEstoqueId === variavel.id)
       );
 
@@ -426,8 +441,9 @@ export class Produtos {
         return;
       }
 
-      this.variavelEstoqueService.deleteVariavel(variavel.id);
-      this.closeModal();
+      this.variavelEstoqueService.deleteVariavel(variavel.id).subscribe(success => {
+        if (success) this.closeModal();
+      });
     }
   }
 
@@ -500,8 +516,8 @@ export class Produtos {
 
   // ===== HELPERS =====
 
-  getTotalVendas(produtoId: string): number {
-    return this.vendasPorPeriodo().get(produtoId) || 0;
+  getTotalVendas(produtoId: number): number {
+    return this.vendasPorPeriodo().get(String(produtoId)) || 0;
   }
 
   getVendasStatus(totalVendas: number): 'alto' | 'medio' | 'baixo' {

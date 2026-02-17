@@ -1,5 +1,5 @@
 export interface VariavelEstoque {
-  id: string;
+  id: number;
   nome: string;
   quantidade: number;
 }

@@ -670,7 +670,7 @@
             <div class="resumo-content">
               @if (tempClienteId()) {
                 @for (cliente of clientes(); track cliente.id) {
-                  @if (cliente.id === tempClienteId()) {
+                  @if ('' + cliente.id === tempClienteId()) {
                     <div class="resumo-row">
                       <span class="resumo-label">👤 Cliente</span>
                       <span class="resumo-value">{{ cliente.nome }}</span>
@@ -680,7 +680,7 @@
               }
               @if (tempEnderecoId()) {
                 @for (endereco of enderecosDoCliente(); track endereco.id) {
-                  @if (endereco.id === tempEnderecoId()) {
+                  @if ('' + endereco.id === tempEnderecoId()) {
                     <div class="resumo-row">
                       <span class="resumo-label">📍 Endereço</span>
                       <span class="resumo-value">{{ getEnderecoFormatado(endereco) }}</span>
