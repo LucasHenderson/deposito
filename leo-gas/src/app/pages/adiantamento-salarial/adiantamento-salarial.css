@@ -411,6 +411,31 @@
   transform: translateY(0);
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-toggle-valores {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  padding: 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.btn-toggle-valores:hover {
+  background: var(--hover-bg);
+  color: var(--text-primary);
+  border-color: var(--primary-color);
+}
+
 /* ===== TABELA ===== */
 
 .table-container {
@@ -1098,8 +1123,12 @@
     padding: 16px;
   }
 
-  .btn-add-gasto {
+  .header-actions {
     width: 100%;
+  }
+
+  .btn-add-gasto {
+    flex: 1;
     justify-content: center;
   }
 

@@ -250,7 +250,7 @@ export class PainelPrincipal implements OnInit {
       vendas.forEach(venda => {
         const key = this.getDateKey(new Date(venda.dataVenda), 'dia');
         venda.itens.forEach(item => {
-          const produto = produtosVinculados.find(p => String(p.id) === item.produtoId);
+          const produto = produtosVinculados.find(p => p.id === item.produtoId);
           if (produto) {
             const vinculo = produto.vinculos.find(v => v.variavelEstoqueId === variavel.id);
             if (vinculo) {
@@ -266,7 +266,7 @@ export class PainelPrincipal implements OnInit {
       let estoqueCorrente = estoqueAtualVal;
       vendas.filter(v => new Date(v.dataVenda) > dataFim).forEach(venda => {
         venda.itens.forEach(item => {
-          const produto = produtosVinculados.find(p => String(p.id) === item.produtoId);
+          const produto = produtosVinculados.find(p => p.id === item.produtoId);
           if (produto) {
             const vinculo = produto.vinculos.find(v => v.variavelEstoqueId === variavel.id);
             if (vinculo) {
@@ -385,7 +385,7 @@ export class PainelPrincipal implements OnInit {
 
     const vendasCliente = this.vendas().filter(v => {
       const dv = new Date(v.dataVenda);
-      return v.clienteId === clienteId && dv >= dataInicio && dv <= dataFim;
+      return String(v.clienteId) === clienteId && dv >= dataInicio && dv <= dataFim;
     });
 
     const periodKeys = this.generatePeriodKeys(inicio, fim, agrupamento);
@@ -431,7 +431,7 @@ export class PainelPrincipal implements OnInit {
 
     const adiantamentos = this.adiantamentos().filter(a => {
       const da = new Date(a.data);
-      return a.entregadorId === entregadorId && da >= dataInicio && da <= dataFim;
+      return String(a.entregadorId) === entregadorId && da >= dataInicio && da <= dataFim;
     });
 
     const periodKeys = this.generatePeriodKeys(inicio, fim, agrupamento);
@@ -463,6 +463,11 @@ export class PainelPrincipal implements OnInit {
   ngOnInit() {
     this.clienteService.carregarClientes();
     this.enderecoService.carregarEnderecos();
+    this.entregadorService.carregarEntregadores();
+    this.produtoService.carregarProdutos();
+    this.variavelEstoqueService.carregarVariaveis();
+    this.adiantamentoService.carregarAdiantamentos();
+    this.vendaService.carregarVendas();
 
     const now = new Date();
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);

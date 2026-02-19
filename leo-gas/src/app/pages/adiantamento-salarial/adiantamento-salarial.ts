@@ -1,9 +1,8 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { EntregadorService } from '../../services/entregador.service';
 import { AdiantamentoService } from '../../services/adiantamento.service';
-import { Entregador } from '../../models/entregador.model';
 import { Adiantamento, AdiantamentoFormData } from '../../models/adiantamento.model';
 
 type ModalType = 'create' | 'edit' | 'delete' | null;
@@ -15,7 +14,7 @@ type SortOrder = 'nome-asc' | 'nome-desc' | 'identificador-asc' | 'mais-gastos' 
   templateUrl: './adiantamento-salarial.html',
   styleUrl: './adiantamento-salarial.css',
 })
-export class AdiantamentoSalarial {
+export class AdiantamentoSalarial implements OnInit {
   private entregadorService = inject(EntregadorService);
   private adiantamentoService = inject(AdiantamentoService);
 
@@ -47,6 +46,9 @@ export class AdiantamentoSalarial {
   // Paginação por entregador (Map: entregadorId -> currentPage)
   currentPages = signal<Record<string, number>>({});
 
+  // Visibilidade de valores por entregador (padrão: oculto)
+  valoresVisiveis = signal<Record<string, boolean>>({});
+
   itemsPerPage = 10;
 
   // Dados
@@ -61,6 +63,11 @@ export class AdiantamentoSalarial {
     const lastDay = new Date(year, now.getMonth() + 1, 0).getDate();
     this.dataInicio.set(`${year}-${month}-01`);
     this.dataFim.set(`${year}-${month}-${String(lastDay).padStart(2, '0')}`);
+  }
+
+  ngOnInit() {
+    this.entregadorService.carregarEntregadores();
+    this.adiantamentoService.carregarAdiantamentos();
   }
 
   // Computed: entregadores filtrados
@@ -239,7 +246,7 @@ export class AdiantamentoSalarial {
     this.selectedAdiantamento.set(adiantamento);
     this.formData.set({
       descricao: adiantamento.descricao,
-      data: new Date(adiantamento.data),
+      data: new Date(adiantamento.data + 'T00:00:00'),
       valor: adiantamento.valor,
     });
     this.modalType.set('edit');
@@ -294,20 +301,23 @@ export class AdiantamentoSalarial {
     const data = this.formData();
 
     if (this.modalType() === 'create') {
-      this.adiantamentoService.createAdiantamento(this.selectedEntregadorId(), data);
+      this.adiantamentoService.createAdiantamento(this.selectedEntregadorId(), data).subscribe(() => {
+        this.closeModal();
+      });
     } else if (this.modalType() === 'edit' && this.selectedAdiantamento()) {
-      this.adiantamentoService.updateAdiantamento(this.selectedAdiantamento()!.id, data);
+      this.adiantamentoService.updateAdiantamento(this.selectedAdiantamento()!.id, this.selectedEntregadorId(), data).subscribe(() => {
+        this.closeModal();
+      });
     }
-
-    this.closeModal();
   }
 
   // Confirmar exclusão
   confirmDelete() {
     const adiantamento = this.selectedAdiantamento();
     if (adiantamento) {
-      this.adiantamentoService.deleteAdiantamento(adiantamento.id);
-      this.closeModal();
+      this.adiantamentoService.deleteAdiantamento(adiantamento.id).subscribe(() => {
+        this.closeModal();
+      });
     }
   }
 
@@ -327,11 +337,14 @@ export class AdiantamentoSalarial {
     return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   }
 
-  formatarData(data: Date): string {
-    return new Date(data).toLocaleDateString('pt-BR');
+  formatarData(data: string | Date): string {
+    return new Date(data + 'T00:00:00').toLocaleDateString('pt-BR');
   }
 
-  getDateInputValue(date: Date): string {
+  getDateInputValue(date: string | Date): string {
+    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return date;
+    }
     const d = new Date(date);
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -352,6 +365,21 @@ export class AdiantamentoSalarial {
   updateFormValor(event: Event) {
     const input = event.target as HTMLInputElement;
     this.formData.update(f => ({ ...f, valor: parseFloat(input.value) || 0 }));
+  }
+
+  isValorVisivel(entregadorId: string | number): boolean {
+    return this.valoresVisiveis()[entregadorId] ?? false;
+  }
+
+  toggleValoresVisiveis(entregadorId: string | number) {
+    this.valoresVisiveis.update(map => ({
+      ...map,
+      [String(entregadorId)]: !this.isValorVisivel(entregadorId)
+    }));
+  }
+
+  mascarar(valor: string): string {
+    return valor.replace(/[0-9]/g, '\u2022').replace(/[A-Za-z]/g, '\u2022');
   }
 
   getInitials(nome: string): string {

@@ -1,25 +1,28 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, inject, signal, computed } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, tap, map, catchError, of } from 'rxjs';
 import { Notificacao } from '../models/notification.model';
+
+const API_URL = 'http://localhost:8080/api/notificacoes';
 
 @Injectable({
   providedIn: 'root'
 })
 export class NotificationService {
 
-  private notificacoes = signal<Notificacao[]>(this.carregarDoStorage());
+  private http = inject(HttpClient);
+  private notificacoes = signal<Notificacao[]>([]);
 
-  // Intervalo para checar notificações agendadas
   private intervalId: any = null;
 
   constructor() {
-    this.iniciarVerificacao();
+    this.iniciarPolling();
   }
 
   getNotificacoes() {
     return this.notificacoes.asReadonly();
   }
 
-  // Retorna apenas as notificações não lidas E que já chegaram na data agendada
   notificacoesAtivas = computed(() => {
     const agora = new Date();
     return this.notificacoes().filter(n => !n.lida && new Date(n.dataAgendada) <= agora);
@@ -29,68 +32,60 @@ export class NotificationService {
     return this.notificacoesAtivas().length;
   });
 
-  adicionarNotificacao(dados: Omit<Notificacao, 'id' | 'lida' | 'criadaEm'>): Notificacao {
-    const nova: Notificacao = {
-      ...dados,
-      id: this.generateId(),
-      lida: false,
-      criadaEm: new Date()
-    };
-
-    this.notificacoes.update(list => [...list, nova]);
-    this.salvarNoStorage();
-    return nova;
+  carregarNotificacoes(): void {
+    this.http.get<Notificacao[]>(API_URL).subscribe({
+      next: (data) => this.notificacoes.set(data),
+      error: (err) => console.error('Erro ao carregar notificações:', err)
+    });
   }
 
-  marcarComoLida(id: string): void {
-    this.notificacoes.update(list =>
-      list.map(n => n.id === id ? { ...n, lida: true } : n)
+  adicionarNotificacao(dados: { vendaId: number; clienteNome: string; valorTotal: number; mensagem: string; dataAgendada: string }): Observable<Notificacao | null> {
+    return this.http.post<Notificacao>(API_URL, dados).pipe(
+      tap(nova => {
+        this.notificacoes.update(list => [...list, nova]);
+      }),
+      catchError((err) => {
+        console.error('Erro ao criar notificação:', err);
+        return of(null);
+      })
     );
-    this.salvarNoStorage();
+  }
+
+  marcarComoLida(id: number): void {
+    this.http.patch<void>(`${API_URL}/${id}/lida`, {}).subscribe({
+      next: () => {
+        this.notificacoes.update(list =>
+          list.map(n => n.id === id ? { ...n, lida: true } : n)
+        );
+      },
+      error: (err) => console.error('Erro ao marcar notificação como lida:', err)
+    });
   }
 
   marcarTodasComoLidas(): void {
-    this.notificacoes.update(list =>
-      list.map(n => ({ ...n, lida: true }))
-    );
-    this.salvarNoStorage();
+    this.http.patch<void>(`${API_URL}/lidas`, {}).subscribe({
+      next: () => {
+        this.notificacoes.update(list =>
+          list.map(n => ({ ...n, lida: true }))
+        );
+      },
+      error: (err) => console.error('Erro ao marcar todas como lidas:', err)
+    });
   }
 
-  removerNotificacao(id: string): void {
-    this.notificacoes.update(list => list.filter(n => n.id !== id));
-    this.salvarNoStorage();
+  removerNotificacao(id: number): void {
+    this.http.delete<void>(`${API_URL}/${id}`).subscribe({
+      next: () => {
+        this.notificacoes.update(list => list.filter(n => n.id !== id));
+      },
+      error: (err) => console.error('Erro ao remover notificação:', err)
+    });
   }
 
-  // Verifica a cada 30 segundos se alguma notificação agendada já deve aparecer
-  private iniciarVerificacao(): void {
+  private iniciarPolling(): void {
     this.intervalId = setInterval(() => {
-      // Força recalcular o computed ao "tocar" o signal
-      this.notificacoes.update(list => [...list]);
-    }, 30000); // 30 segundos
-  }
-
-  private salvarNoStorage(): void {
-    try {
-      localStorage.setItem('notificacoes', JSON.stringify(this.notificacoes()));
-    } catch (e) {
-      console.warn('Erro ao salvar notificações no localStorage', e);
-    }
-  }
-
-  private carregarDoStorage(): Notificacao[] {
-    try {
-      const dados = localStorage.getItem('notificacoes');
-      if (dados) {
-        return JSON.parse(dados);
-      }
-    } catch (e) {
-      console.warn('Erro ao carregar notificações do localStorage', e);
-    }
-    return [];
-  }
-
-  private generateId(): string {
-    return Date.now().toString() + Math.random().toString(36).substr(2, 9);
+      this.carregarNotificacoes();
+    }, 30000);
   }
 
   ngOnDestroy(): void {

@@ -37,6 +37,9 @@ export class Vendas implements OnInit {
   ngOnInit(): void {
     this.clienteService.carregarClientes();
     this.enderecoService.carregarEnderecos();
+    this.entregadorService.carregarEntregadores();
+    this.produtoService.carregarProdutos();
+    this.vendaService.carregarVendas();
   }
 
   isAdmin = this.authService.isAdmin;
@@ -79,9 +82,9 @@ export class Vendas implements OnInit {
 
   // Formulário de edição
   formData = signal<VendaFormData>({
-    clienteId: '',
-    enderecoId: '',
-    entregadorId: '',
+    clienteId: 0,
+    enderecoId: 0,
+    entregadorId: 0,
     itens: [],
     pagamentos: [],
     valorTotal: 0,
@@ -184,7 +187,7 @@ export class Vendas implements OnInit {
     
     // Filtro por entregador
     if (this.filterEntregador()) {
-      list = list.filter(v => v.entregadorId === this.filterEntregador());
+      list = list.filter(v => String(v.entregadorId) === this.filterEntregador());
     }
     
 // Filtro por status
@@ -258,7 +261,7 @@ export class Vendas implements OnInit {
         .reduce((sum, p) => sum + p.valor, 0);
       
       if (valorParaEntregador > 0) {
-        const key = v.entregadorId;
+        const key = String(v.entregadorId);
         const current = totais.get(key) || { 
           nome: v.entregadorIdentificador, 
           total: 0 
@@ -441,9 +444,9 @@ limparFiltros() {
 
   recalcularItens() {
     const formaPagamento = this.tempFormaPagamento();
-    this.tempItens.update(itens => 
+    this.tempItens.update(itens =>
       itens.map(item => {
-        const produto = this.produtos().find(p => String(p.id) === item.produtoId);
+        const produto = this.produtos().find(p => p.id === item.produtoId);
         if (produto) {
           const precoUnitario = produto.precos[formaPagamento];
           return {
@@ -466,7 +469,7 @@ limparFiltros() {
     if (!produto || quantidade <= 0) return;
 
     const novoItem: ItemVenda = {
-      produtoId,
+      produtoId: Number(produtoId),
       produtoNome: produto.nome,
       quantidade,
       precoUnitario,
@@ -588,26 +591,27 @@ limparFiltros() {
     }
 
     const vendaData: VendaFormData = {
-      clienteId: this.tempClienteId(),
-      enderecoId: this.tempEnderecoId(),
-      entregadorId: String(entregadorId),
+      clienteId: Number(this.tempClienteId()),
+      enderecoId: Number(this.tempEnderecoId()),
+      entregadorId: Number(entregadorId),
       itens: this.tempItens(),
       pagamentos: pagamentosFinal,
       valorTotal: valorTotal,
       observacoes: this.tempObservacoes()
     };
 
-    const venda = this.vendaService.createVenda(vendaData);
-    if (venda) {
-      this.logService.registrar('criar', 'Vendas',
-        `Venda criada para ${venda.clienteNome} — ${this.formatarMoeda(venda.valorTotal)}`,
-        `Cliente: ${venda.clienteNome}\nEndereço: ${venda.enderecoFormatado}\nEntregador: ${venda.entregadorIdentificador}\nValor: ${this.formatarMoeda(venda.valorTotal)}\nItens: ${venda.itens.map(i => `${i.produtoNome} x${i.quantidade}`).join(', ')}\nPagamentos: ${venda.pagamentos.map(p => `${p.forma} ${this.formatarMoeda(p.valor)}`).join(', ')}\nObservações: ${venda.observacoes || 'Nenhuma'}`,
-        this.authService.usuarioLogado()?.usuario ?? 'desconhecido'
-      );
-      this.closeModal();
-    } else {
-      alert('Erro ao criar venda. Verifique o estoque disponível.');
-    }
+    this.vendaService.createVenda(vendaData).subscribe(venda => {
+      if (venda) {
+        this.logService.registrar('criar', 'Vendas',
+          `Venda criada para ${venda.clienteNome} — ${this.formatarMoeda(venda.valorTotal)}`,
+          `Cliente: ${venda.clienteNome}\nEndereço: ${venda.enderecoFormatado}\nEntregador: ${venda.entregadorIdentificador}\nValor: ${this.formatarMoeda(venda.valorTotal)}\nItens: ${venda.itens.map(i => `${i.produtoNome} x${i.quantidade}`).join(', ')}\nPagamentos: ${venda.pagamentos.map(p => `${p.forma} ${this.formatarMoeda(p.valor)}`).join(', ')}\nObservações: ${venda.observacoes || 'Nenhuma'}`,
+          this.authService.usuarioLogado()?.usuario ?? 'desconhecido'
+        );
+        this.closeModal();
+      } else {
+        alert('Erro ao criar venda. Verifique o estoque disponível.');
+      }
+    });
   }
 
   updateTempObservacoes(event: Event) {
@@ -627,7 +631,12 @@ limparFiltros() {
     const select = event.target as HTMLSelectElement;
     const venda = this.selectedVenda();
     if (venda) {
-      this.vendaService.updateStatus(venda.id, select.value as StatusVenda);
+      this.vendaService.updateStatus(venda.id, select.value as StatusVenda).subscribe(sucesso => {
+        if (sucesso) {
+          const atualizada = this.vendaService.getVendaById(venda.id);
+          if (atualizada) this.selectedVenda.set(atualizada);
+        }
+      });
     }
   }
 
@@ -650,17 +659,17 @@ limparFiltros() {
 
   updateFormCliente(event: Event) {
     const select = event.target as HTMLSelectElement;
-    this.formData.update(f => ({ ...f, clienteId: select.value, enderecoId: '' }));
+    this.formData.update(f => ({ ...f, clienteId: Number(select.value), enderecoId: 0 }));
   }
 
   updateFormEndereco(event: Event) {
     const select = event.target as HTMLSelectElement;
-    this.formData.update(f => ({ ...f, enderecoId: select.value }));
+    this.formData.update(f => ({ ...f, enderecoId: Number(select.value) }));
   }
 
   updateFormEntregador(event: Event) {
     const select = event.target as HTMLSelectElement;
-    this.formData.update(f => ({ ...f, entregadorId: select.value }));
+    this.formData.update(f => ({ ...f, entregadorId: Number(select.value) }));
   }
 
   updateFormValorTotal(event: Event) {
@@ -731,7 +740,7 @@ limparFiltros() {
     if (!produto || quantidade <= 0) return;
 
     const novoItem: ItemVenda = {
-      produtoId,
+      produtoId: Number(produtoId),
       produtoNome: produto.nome,
       quantidade,
       precoUnitario,
@@ -800,23 +809,24 @@ limparFiltros() {
 
     const antes = `Cliente: ${venda.clienteNome}\nEndereço: ${venda.enderecoFormatado}\nEntregador: ${venda.entregadorIdentificador}\nValor: ${this.formatarMoeda(venda.valorTotal)}\nItens: ${venda.itens.map(i => `${i.produtoNome} x${i.quantidade}`).join(', ')}\nPagamentos: ${venda.pagamentos.map(p => `${p.forma} ${this.formatarMoeda(p.valor)}`).join(', ')}\nObservações: ${venda.observacoes || 'Nenhuma'}`;
 
-    const sucesso = this.vendaService.updateVenda(venda.id, this.formData());
-    if (sucesso) {
-      const vendaAtualizada = this.vendaService.getVendaById(venda.id);
-      const depois = vendaAtualizada
-        ? `Cliente: ${vendaAtualizada.clienteNome}\nEndereço: ${vendaAtualizada.enderecoFormatado}\nEntregador: ${vendaAtualizada.entregadorIdentificador}\nValor: ${this.formatarMoeda(vendaAtualizada.valorTotal)}\nItens: ${vendaAtualizada.itens.map(i => `${i.produtoNome} x${i.quantidade}`).join(', ')}\nPagamentos: ${vendaAtualizada.pagamentos.map(p => `${p.forma} ${this.formatarMoeda(p.valor)}`).join(', ')}\nObservações: ${vendaAtualizada.observacoes || 'Nenhuma'}`
-        : 'Dados atualizados';
+    this.vendaService.updateVenda(venda.id, this.formData()).subscribe(sucesso => {
+      if (sucesso) {
+        const vendaAtualizada = this.vendaService.getVendaById(venda.id);
+        const depois = vendaAtualizada
+          ? `Cliente: ${vendaAtualizada.clienteNome}\nEndereço: ${vendaAtualizada.enderecoFormatado}\nEntregador: ${vendaAtualizada.entregadorIdentificador}\nValor: ${this.formatarMoeda(vendaAtualizada.valorTotal)}\nItens: ${vendaAtualizada.itens.map(i => `${i.produtoNome} x${i.quantidade}`).join(', ')}\nPagamentos: ${vendaAtualizada.pagamentos.map(p => `${p.forma} ${this.formatarMoeda(p.valor)}`).join(', ')}\nObservações: ${vendaAtualizada.observacoes || 'Nenhuma'}`
+          : 'Dados atualizados';
 
-      this.logService.registrar('editar', 'Vendas',
-        `Venda de ${venda.clienteNome} editada — ${this.formatarMoeda(venda.valorTotal)}`,
-        depois,
-        this.authService.usuarioLogado()?.usuario ?? 'desconhecido',
-        antes
-      );
-      this.closeModal();
-    } else {
-      alert('Erro ao atualizar venda.');
-    }
+        this.logService.registrar('editar', 'Vendas',
+          `Venda de ${venda.clienteNome} editada — ${this.formatarMoeda(venda.valorTotal)}`,
+          depois,
+          this.authService.usuarioLogado()?.usuario ?? 'desconhecido',
+          antes
+        );
+        this.closeModal();
+      } else {
+        alert('Erro ao atualizar venda.');
+      }
+    });
   }
 
   // ===== MODAL - EXCLUIR =====
@@ -830,19 +840,27 @@ limparFiltros() {
     const venda = this.selectedVenda();
     if (!venda) return;
 
-    this.logService.registrar('excluir', 'Vendas',
-      `Venda de ${venda.clienteNome} excluída — ${this.formatarMoeda(venda.valorTotal)}`,
-      `ID: ${venda.id}\nCliente: ${venda.clienteNome}\nEndereço: ${venda.enderecoFormatado}\nEntregador: ${venda.entregadorIdentificador}\nValor: ${this.formatarMoeda(venda.valorTotal)}\nItens: ${venda.itens.map(i => `${i.produtoNome} x${i.quantidade}`).join(', ')}\nData: ${new Date(venda.dataVenda).toLocaleDateString('pt-BR')}`,
-      this.authService.usuarioLogado()?.usuario ?? 'desconhecido'
-    );
-    this.vendaService.deleteVenda(venda.id);
-    this.closeModal();
+    this.vendaService.deleteVenda(venda.id).subscribe(sucesso => {
+      if (sucesso) {
+        // Recarregar notificações (CASCADE remove as da venda excluída no banco)
+        this.notificationService.carregarNotificacoes();
+
+        this.logService.registrar('excluir', 'Vendas',
+          `Venda de ${venda.clienteNome} excluída — ${this.formatarMoeda(venda.valorTotal)}`,
+          `ID: ${venda.id}\nCliente: ${venda.clienteNome}\nEndereço: ${venda.enderecoFormatado}\nEntregador: ${venda.entregadorIdentificador}\nValor: ${this.formatarMoeda(venda.valorTotal)}\nItens: ${venda.itens.map(i => `${i.produtoNome} x${i.quantidade}`).join(', ')}\nData: ${new Date(venda.dataVenda).toLocaleDateString('pt-BR')}`,
+          this.authService.usuarioLogado()?.usuario ?? 'desconhecido'
+        );
+        this.closeModal();
+      } else {
+        alert('Erro ao excluir venda.');
+      }
+    });
   }
 
 // ===== AÇÕES NA LISTA =====
 
-  updateStatus(vendaId: string, novoStatus: StatusVenda) {
-    this.vendaService.updateStatus(vendaId, novoStatus);
+  updateStatus(vendaId: number, novoStatus: StatusVenda) {
+    this.vendaService.updateStatus(vendaId, novoStatus).subscribe();
   }
 
   // ANTIGO: chamava direto o toggle sem confirmação
@@ -861,32 +879,37 @@ confirmarTogglePendente() {
     const venda = this.selectedVenda();
     if (!venda) return;
 
-    // Se está marcando como pendente E o usuário quer agendar notificação
-    if (!venda.recebimentoPendente && this.agendarNotificacao() && this.notificacaoData() && this.notificacaoHora()) {
-      const dataHora = new Date(`${this.notificacaoData()}T${this.notificacaoHora()}`);
-      
-      if (dataHora > new Date()) {
-        this.notificationService.adicionarNotificacao({
-          vendaId: venda.id,
-          clienteNome: venda.clienteNome,
-          valorTotal: venda.valorTotal,
-          mensagem: `Lembrete: Recebimento pendente de ${venda.clienteNome} — ${this.formatarMoeda(venda.valorTotal)}`,
-          dataAgendada: dataHora
-        });
-      }
-    }
-
     const acaoPendente = venda.recebimentoPendente ? 'removida' : 'marcada';
-    this.vendaService.toggleRecebimentoPendente(venda.id);
+    const querAgendar = !venda.recebimentoPendente && this.agendarNotificacao() && this.notificacaoData() && this.notificacaoHora();
 
-    this.logService.registrar('pendencia', 'Vendas',
-      `Venda de ${venda.clienteNome} ${acaoPendente} como pendente — ${this.formatarMoeda(venda.valorTotal)}`,
-      `Cliente: ${venda.clienteNome}\nEndereço: ${venda.enderecoFormatado}\nValor: ${this.formatarMoeda(venda.valorTotal)}\nAção: Recebimento pendente ${acaoPendente}\nData da Venda: ${this.formatarData(venda.dataVenda)}`,
-      this.authService.usuarioLogado()?.usuario ?? 'desconhecido'
-    );
+    this.vendaService.toggleRecebimentoPendente(venda.id).subscribe(sucesso => {
+      if (sucesso) {
+        // Agendar notificação apenas após sucesso do toggle
+        if (querAgendar) {
+          const dataHoraStr = `${this.notificacaoData()}T${this.notificacaoHora()}`;
+          const dataHora = new Date(dataHoraStr);
+          if (dataHora > new Date()) {
+            this.notificationService.adicionarNotificacao({
+              vendaId: venda.id,
+              clienteNome: venda.clienteNome,
+              valorTotal: venda.valorTotal,
+              mensagem: `Lembrete: Recebimento pendente de ${venda.clienteNome} — ${this.formatarMoeda(venda.valorTotal)}`,
+              dataAgendada: dataHoraStr
+            }).subscribe();
+          }
+        }
 
-    this.resetAgendamento();
-    this.closeModal();
+        this.logService.registrar('pendencia', 'Vendas',
+          `Venda de ${venda.clienteNome} ${acaoPendente} como pendente — ${this.formatarMoeda(venda.valorTotal)}`,
+          `Cliente: ${venda.clienteNome}\nEndereço: ${venda.enderecoFormatado}\nValor: ${this.formatarMoeda(venda.valorTotal)}\nAção: Recebimento pendente ${acaoPendente}\nData da Venda: ${this.formatarData(venda.dataVenda)}`,
+          this.authService.usuarioLogado()?.usuario ?? 'desconhecido'
+        );
+        this.resetAgendamento();
+        this.closeModal();
+      } else {
+        alert('Erro ao alterar recebimento pendente.');
+      }
+    });
   }
 
   resetAgendamento() {
@@ -944,7 +967,7 @@ confirmarTogglePendente() {
     return `https://wa.me/55${numero}`;
   }
 
-  formatarData(data: Date): string {
+  formatarData(data: string | Date): string {
     return new Date(data).toLocaleDateString('pt-BR');
   }
 

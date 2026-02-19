@@ -2,7 +2,7 @@ export type StatusVenda = 'a-entregar' | 'entregando' | 'entregue';
 export type FormaPagamento = 'credito' | 'debito' | 'dinheiro' | 'pix';
 
 export interface ItemVenda {
-  produtoId: string;
+  produtoId: number;
   produtoNome: string;
   quantidade: number;
   precoUnitario: number;
@@ -15,27 +15,27 @@ export interface PagamentoVenda {
 }
 
 export interface Venda {
-  id: string;
-  clienteId: string;
+  id: number;
+  clienteId: number;
   clienteNome: string;
   clienteTelefone: string;
-  enderecoId: string;
+  enderecoId: number;
   enderecoFormatado: string;
-  entregadorId: string;
+  entregadorId: number;
   entregadorIdentificador: string;
   itens: ItemVenda[];
   pagamentos: PagamentoVenda[];
   valorTotal: number;
   status: StatusVenda;
   recebimentoPendente: boolean;
-  dataVenda: Date;
+  dataVenda: string;
   observacoes: string;
 }
 
 export interface VendaFormData {
-  clienteId: string;
-  enderecoId: string;
-  entregadorId: string;
+  clienteId: number;
+  enderecoId: number;
+  entregadorId: number;
   itens: ItemVenda[];
   pagamentos: PagamentoVenda[];
   valorTotal: number;

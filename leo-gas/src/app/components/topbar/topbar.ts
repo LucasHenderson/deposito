@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output, inject, signal } from '@angular/core';
+import { Component, EventEmitter, Output, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { ThemeService } from '../../services/theme.service';
@@ -12,7 +12,7 @@ import { Notificacao } from '../../models/notification.model';
   templateUrl: './topbar.html',
   styleUrl: './topbar.css',
 })
-export class Topbar {
+export class Topbar implements OnInit {
   private router = inject(Router);
   private themeService = inject(ThemeService);
   private notificationService = inject(NotificationService);
@@ -22,9 +22,12 @@ export class Topbar {
   isMenuOpen = false;
   isNotificationModalOpen = signal(false);
 
-  // Agora vem do serviço real
   notificationCount = this.notificationService.contadorNaoLidas;
   notificacoesAtivas = this.notificationService.notificacoesAtivas;
+
+  ngOnInit(): void {
+    this.notificationService.carregarNotificacoes();
+  }
 
   // Expondo o sinal do tema para o template
   isDarkMode = this.themeService.isDarkMode;
@@ -48,7 +51,7 @@ export class Topbar {
     }
   }
 
-  marcarComoLida(id: string) {
+  marcarComoLida(id: number) {
     this.notificationService.marcarComoLida(id);
   }
 
@@ -57,7 +60,7 @@ export class Topbar {
     this.closeNotificationModal();
   }
 
-  formatarDataHora(data: Date): string {
+  formatarDataHora(data: Date | string): string {
     return new Date(data).toLocaleString('pt-BR', {
       day: '2-digit',
       month: '2-digit',

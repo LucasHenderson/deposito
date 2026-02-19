@@ -1,10 +1,10 @@
 export interface Notificacao {
-  id: string;
-  vendaId: string;
+  id: number;
+  vendaId: number;
   clienteNome: string;
   valorTotal: number;
   mensagem: string;
-  dataAgendada: Date;  // data/hora que a notificação deve aparecer
+  dataAgendada: string;
   lida: boolean;
-  criadaEm: Date;
+  criadaEm: string;
 }

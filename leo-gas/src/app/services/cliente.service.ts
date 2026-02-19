@@ -2,6 +2,7 @@ import { inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map, tap, catchError, of } from 'rxjs';
 import { Cliente, ClienteFormData, HistoricoCompra } from '../models/cliente.model';
+import { VendaService } from './venda.service';
 
 const API_URL = 'http://localhost:8080/api/clientes';
 
@@ -20,10 +21,8 @@ interface ClienteBackend {
 })
 export class ClienteService {
   private http = inject(HttpClient);
+  private vendaService = inject(VendaService);
   private clientes = signal<Cliente[]>([]);
-
-  // Histórico de compras (será migrado quando a página de Vendas for conectada ao backend)
-  private historicoCompras = signal<HistoricoCompra[]>([]);
 
   getClientes() {
     return this.clientes.asReadonly();
@@ -50,10 +49,22 @@ export class ClienteService {
   }
 
   getHistoricoCompras(clienteId: string | number): HistoricoCompra[] {
-    const strId = String(clienteId);
-    return this.historicoCompras()
-      .filter(h => h.clienteId === strId)
-      .sort((a, b) => new Date(b.dataCompra).getTime() - new Date(a.dataCompra).getTime());
+    const numId = Number(clienteId);
+    const vendas = this.vendaService.getVendas()();
+
+    return vendas
+      .filter(v => v.clienteId === numId)
+      .sort((a, b) => new Date(b.dataVenda).getTime() - new Date(a.dataVenda).getTime())
+      .map(v => ({
+        id: String(v.id),
+        clienteId: String(v.clienteId),
+        produtoNome: v.itens.map(i => i.produtoNome).join(', '),
+        quantidade: v.itens.reduce((sum, i) => sum + i.quantidade, 0),
+        valorTotal: v.valorTotal,
+        formaPagamento: v.pagamentos.map(p => p.forma).join(', '),
+        dataCompra: new Date(v.dataVenda),
+        enderecoEntrega: v.enderecoFormatado
+      }));
   }
 
   getUltimaCompra(clienteId: string | number): HistoricoCompra | undefined {
@@ -79,23 +90,6 @@ export class ClienteService {
     });
   }
 
-  // ===== MÉTODOS DE HISTÓRICO (será migrado com Vendas) =====
-  adicionarCompra(compra: HistoricoCompra): void {
-    this.historicoCompras.update(list => [...list, compra]);
-  }
-
-  removerComprasPorVenda(vendaId: string): void {
-    this.historicoCompras.update(list =>
-      list.filter(h => !h.id.startsWith(vendaId))
-    );
-  }
-
-  removerCompra(compraId: string): void {
-    this.historicoCompras.update(list =>
-      list.filter(h => h.id !== compraId)
-    );
-  }
-  // ====================================
 
   createCliente(data: ClienteFormData): Observable<Cliente | null> {
     const request = this.toBackendRequest(data);
@@ -125,8 +119,6 @@ export class ClienteService {
     return this.http.delete<void>(`${API_URL}/${id}`).pipe(
       tap(() => {
         this.clientes.update(list => list.filter(c => c.id !== id));
-        // Remove histórico de compras local
-        this.historicoCompras.update(list => list.filter(h => h.clienteId !== String(id)));
       }),
       map(() => true),
       catchError(() => of(false))

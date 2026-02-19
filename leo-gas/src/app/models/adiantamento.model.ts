@@ -1,8 +1,8 @@
 export interface Adiantamento {
-  id: string;
-  entregadorId: string;
+  id: number;
+  entregadorId: number;
   descricao: string;
-  data: Date;
+  data: string;
   valor: number;
 }
 

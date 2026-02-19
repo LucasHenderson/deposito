@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ClienteService } from '../../services/cliente.service';
 import { EnderecoService } from '../../services/endereco.service';
+import { VendaService } from '../../services/venda.service';
 import { Cliente, ClienteFormData, HistoricoCompra } from '../../models/cliente.model';
 import { Endereco } from '../../models/endereco.model';
 import { AuthService } from '../../services/auth.service';
@@ -20,12 +21,14 @@ type SortOrder = 'nome-asc' | 'nome-desc' | 'recentes' | 'antigos' | 'sem-compra
 export class Clientes implements OnInit {
   private clienteService = inject(ClienteService);
   private enderecoService = inject(EnderecoService);
+  private vendaService = inject(VendaService);
   private authService = inject(AuthService);
   private logService = inject(LogService);
 
   ngOnInit(): void {
     this.clienteService.carregarClientes();
     this.enderecoService.carregarEnderecos();
+    this.vendaService.carregarVendas();
   }
 
   isAdmin = this.authService.isAdmin;
