@@ -157,34 +157,31 @@
     <div class="chart-container">
       @if (vendasChartData().length > 0) {
         <div class="chart-wrapper">
-          <svg class="chart-svg" viewBox="0 0 800 260" preserveAspectRatio="xMidYMid meet">
+          <svg class="chart-svg" [attr.viewBox]="'0 0 ' + getChartMinWidth(vendasChartData().length) + ' 260'" preserveAspectRatio="xMinYMid meet" [style.min-width.px]="getChartMinWidth(vendasChartData().length)">
             @for (line of getGridLines(vendasMaxValue()); track line) {
-              <line [attr.x1]="50" [attr.y1]="getGridY(line, vendasMaxValue(), 200) + 20" [attr.x2]="780" [attr.y2]="getGridY(line, vendasMaxValue(), 200) + 20" class="grid-line"/>
+              <line [attr.x1]="50" [attr.y1]="getGridY(line, vendasMaxValue(), 200) + 20" [attr.x2]="getChartMinWidth(vendasChartData().length) - 20" [attr.y2]="getGridY(line, vendasMaxValue(), 200) + 20" class="grid-line"/>
               <text [attr.x]="45" [attr.y]="getGridY(line, vendasMaxValue(), 200) + 25" class="grid-label" text-anchor="end">{{ line }}</text>
             }
             @for (item of vendasChartData(); track item.fullDate; let i = $index) {
               <g class="bar-group">
                 <rect
-                  [attr.x]="60 + i * ((720) / vendasChartData().length) + ((720) / vendasChartData().length - getBarWidth(vendasChartData().length, 720)) / 2"
+                  [attr.x]="60 + i * ((getChartMinWidth(vendasChartData().length) - 80) / vendasChartData().length) + ((getChartMinWidth(vendasChartData().length) - 80) / vendasChartData().length - getBarWidth(vendasChartData().length, getChartMinWidth(vendasChartData().length) - 80)) / 2"
                   [attr.y]="getBarY(item.value, vendasMaxValue(), 200) + 20"
-                  [attr.width]="getBarWidth(vendasChartData().length, 720)"
+                  [attr.width]="getBarWidth(vendasChartData().length, getChartMinWidth(vendasChartData().length) - 80)"
                   [attr.height]="getBarHeight(item.value, vendasMaxValue(), 200)"
                   class="chart-bar vendas-bar" rx="3"
                 />
                 @if (item.value > 0) {
                   <text
-                    [attr.x]="60 + i * ((720) / vendasChartData().length) + ((720) / vendasChartData().length) / 2"
+                    [attr.x]="60 + i * ((getChartMinWidth(vendasChartData().length) - 80) / vendasChartData().length) + ((getChartMinWidth(vendasChartData().length) - 80) / vendasChartData().length) / 2"
                     [attr.y]="getBarY(item.value, vendasMaxValue(), 200) + 14"
                     class="bar-value" text-anchor="middle"
                   >{{ item.value }}</text>
                 }
-                @if (i % getLabelInterval(vendasChartData().length) === 0) {
-                  <text
-                    [attr.x]="60 + i * ((720) / vendasChartData().length) + ((720) / vendasChartData().length) / 2"
-                    [attr.y]="244" class="bar-label" text-anchor="middle"
-                    [attr.transform]="shouldRotateLabels(vendasChartData().length) ? 'rotate(-45,' + (60 + i * ((720) / vendasChartData().length) + ((720) / vendasChartData().length) / 2) + ',244)' : ''"
-                  >{{ item.label }}</text>
-                }
+                <text
+                  [attr.x]="60 + i * ((getChartMinWidth(vendasChartData().length) - 80) / vendasChartData().length) + ((getChartMinWidth(vendasChartData().length) - 80) / vendasChartData().length) / 2"
+                  [attr.y]="244" class="bar-label" text-anchor="middle"
+                >{{ item.label }}</text>
               </g>
             }
           </svg>
@@ -242,6 +239,46 @@
     <div class="sub-section">
       <h3 class="sub-section-title">Evolução do Estoque</h3>
       <div class="filters-row">
+        <div class="filter-group estoque-selector">
+          <label>Variáveis de Estoque (máx. 10)</label>
+          <div class="multi-select-container">
+            <div class="multi-select-input" (click)="toggleEstoqueDropdown()">
+              @if (estoqueSelecionadas().length === 0) {
+                <span class="placeholder-text">Todas as variáveis</span>
+              } @else {
+                <div class="selected-tags">
+                  @for (id of estoqueSelecionadas(); track id; let i = $index) {
+                    <span class="selected-tag" [style.background]="CORES_ESTOQUE[i % CORES_ESTOQUE.length]" [style.border-color]="CORES_ESTOQUE[i % CORES_ESTOQUE.length]">
+                      {{ getEstoqueNome(id) }}
+                      <button class="tag-remove" (click)="removeEstoqueVariavel(id); $event.stopPropagation()">×</button>
+                    </span>
+                  }
+                </div>
+              }
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="select-arrow"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            @if (showEstoqueDropdown()) {
+              <div class="multi-select-dropdown">
+                <div class="dropdown-search">
+                  <input type="text" placeholder="Buscar variável..." [value]="estoqueSearchTerm()" (input)="updateEstoqueSearch($event)" (click)="$event.stopPropagation()">
+                </div>
+                <div class="dropdown-list">
+                  @for (v of estoqueFiltradas(); track v.id) {
+                    <div class="dropdown-option" [class.selected]="isEstoqueSelecionada(v.id)" [class.disabled]="!isEstoqueSelecionada(v.id) && estoqueSelecionadas().length >= 10" (click)="toggleEstoqueVariavel(v.id); $event.stopPropagation()">
+                      <div class="option-check" [class.checked]="isEstoqueSelecionada(v.id)">
+                        @if (isEstoqueSelecionada(v.id)) {
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        }
+                      </div>
+                      <span class="option-text">{{ v.nome }}</span>
+                      <span class="option-count">{{ v.quantidade }} un.</span>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
         <div class="filter-group">
           <label>Data Início</label>
           <input type="date" class="filter-input" [value]="estoqueDataInicio()" (change)="updateEstoqueInicio($event)">
@@ -271,32 +308,33 @@
             }
           </div>
           <div class="chart-wrapper">
-            <svg class="chart-svg" viewBox="0 0 800 260" preserveAspectRatio="xMidYMid meet">
+            <svg class="chart-svg" [attr.viewBox]="'0 0 ' + getChartMinWidth(estoqueHistorico()[0].pontos.length, 60) + ' 260'" preserveAspectRatio="xMinYMid meet" [style.min-width.px]="getChartMinWidth(estoqueHistorico()[0].pontos.length, 60)">
               @for (line of getGridLines(estoqueHistoricoMax()); track line) {
-                <line [attr.x1]="50" [attr.y1]="getGridY(line, estoqueHistoricoMax(), 200) + 20" [attr.x2]="780" [attr.y2]="getGridY(line, estoqueHistoricoMax(), 200) + 20" class="grid-line"/>
+                <line [attr.x1]="50" [attr.y1]="getGridY(line, estoqueHistoricoMax(), 200) + 20" [attr.x2]="getChartMinWidth(estoqueHistorico()[0].pontos.length, 60) - 20" [attr.y2]="getGridY(line, estoqueHistoricoMax(), 200) + 20" class="grid-line"/>
                 <text [attr.x]="45" [attr.y]="getGridY(line, estoqueHistoricoMax(), 200) + 25" class="grid-label" text-anchor="end">{{ line }}</text>
               }
               @for (serie of estoqueHistorico(); track serie.nome) {
-                <polygon [attr.points]="getAreaPoints(serie.pontos, estoqueHistoricoMax(), 720, 200)" [attr.fill]="serie.cor" fill-opacity="0.08" [attr.transform]="'translate(60, 20)'"/>
-                <polyline [attr.points]="getLinePoints(serie.pontos, estoqueHistoricoMax(), 720, 200)" [attr.stroke]="serie.cor" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" [attr.transform]="'translate(60, 20)'"/>
-                @if (serie.pontos.length <= 60) {
-                  @for (ponto of serie.pontos; track $index; let j = $index) {
-                    <circle
-                      [attr.cx]="60 + (serie.pontos.length > 1 ? j * (720 / (serie.pontos.length - 1)) : 360)"
-                      [attr.cy]="getGridY(ponto.valor, estoqueHistoricoMax(), 200) + 20"
-                      r="3" [attr.fill]="serie.cor" class="chart-dot"
-                    />
-                  }
+                <polygon [attr.points]="getAreaPoints(serie.pontos, estoqueHistoricoMax(), getChartMinWidth(estoqueHistorico()[0].pontos.length, 60) - 80, 200)" [attr.fill]="serie.cor" fill-opacity="0.08" [attr.transform]="'translate(60, 20)'"/>
+                <polyline [attr.points]="getLinePoints(serie.pontos, estoqueHistoricoMax(), getChartMinWidth(estoqueHistorico()[0].pontos.length, 60) - 80, 200)" [attr.stroke]="serie.cor" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" [attr.transform]="'translate(60, 20)'"/>
+                @for (ponto of serie.pontos; track $index; let j = $index) {
+                  <circle
+                    [attr.cx]="60 + (serie.pontos.length > 1 ? j * ((getChartMinWidth(estoqueHistorico()[0].pontos.length, 60) - 80) / (serie.pontos.length - 1)) : (getChartMinWidth(estoqueHistorico()[0].pontos.length, 60) - 80) / 2)"
+                    [attr.cy]="getGridY(ponto.valor, estoqueHistoricoMax(), 200) + 20"
+                    r="3" [attr.fill]="serie.cor" class="chart-dot"
+                  />
+                  <text
+                    [attr.x]="60 + (serie.pontos.length > 1 ? j * ((getChartMinWidth(estoqueHistorico()[0].pontos.length, 60) - 80) / (serie.pontos.length - 1)) : (getChartMinWidth(estoqueHistorico()[0].pontos.length, 60) - 80) / 2)"
+                    [attr.y]="getGridY(ponto.valor, estoqueHistoricoMax(), 200) + 12"
+                    class="bar-value" text-anchor="middle" [attr.fill]="serie.cor"
+                  >{{ ponto.valor }}</text>
                 }
               }
               @if (estoqueHistorico().length > 0) {
                 @for (ponto of estoqueHistorico()[0].pontos; track $index; let i = $index) {
-                  @if (i % getLabelInterval(estoqueHistorico()[0].pontos.length) === 0) {
-                    <text
-                      [attr.x]="60 + (estoqueHistorico()[0].pontos.length > 1 ? i * (720 / (estoqueHistorico()[0].pontos.length - 1)) : 360)"
-                      [attr.y]="244" class="bar-label" text-anchor="middle"
-                    >{{ formatGroupLabel(ponto.data, estoqueAgrupamento()) }}</text>
-                  }
+                  <text
+                    [attr.x]="60 + (estoqueHistorico()[0].pontos.length > 1 ? i * ((getChartMinWidth(estoqueHistorico()[0].pontos.length, 60) - 80) / (estoqueHistorico()[0].pontos.length - 1)) : (getChartMinWidth(estoqueHistorico()[0].pontos.length, 60) - 80) / 2)"
+                    [attr.y]="244" class="bar-label" text-anchor="middle"
+                  >{{ formatGroupLabel(ponto.data, estoqueAgrupamento()) }}</text>
                 }
               }
             </svg>
@@ -306,7 +344,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
             </svg>
-            <p>Selecione um período para visualizar a evolução do estoque</p>
+            <p>Selecione um período para visualizar a evolução do estoque. Filtre por variáveis específicas se desejar.</p>
           </div>
         }
       </div>
@@ -399,31 +437,32 @@
           }
         </div>
         <div class="chart-wrapper">
-          <svg class="chart-svg" viewBox="0 0 800 260" preserveAspectRatio="xMidYMid meet">
+          <svg class="chart-svg" [attr.viewBox]="'0 0 ' + getChartMinWidth(quadrasChartData()[0].pontos.length, 60) + ' 260'" preserveAspectRatio="xMinYMid meet" [style.min-width.px]="getChartMinWidth(quadrasChartData()[0].pontos.length, 60)">
             @for (line of getGridLines(quadrasChartMax()); track line) {
-              <line [attr.x1]="50" [attr.y1]="getGridY(line, quadrasChartMax(), 200) + 20" [attr.x2]="780" [attr.y2]="getGridY(line, quadrasChartMax(), 200) + 20" class="grid-line"/>
+              <line [attr.x1]="50" [attr.y1]="getGridY(line, quadrasChartMax(), 200) + 20" [attr.x2]="getChartMinWidth(quadrasChartData()[0].pontos.length, 60) - 20" [attr.y2]="getGridY(line, quadrasChartMax(), 200) + 20" class="grid-line"/>
               <text [attr.x]="45" [attr.y]="getGridY(line, quadrasChartMax(), 200) + 25" class="grid-label" text-anchor="end">{{ line }}</text>
             }
             @for (serie of quadrasChartData(); track serie.quadra) {
-              <polyline [attr.points]="getLinePoints(serie.pontos, quadrasChartMax(), 720, 200)" [attr.stroke]="serie.cor" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" [attr.transform]="'translate(60, 20)'"/>
+              <polyline [attr.points]="getLinePoints(serie.pontos, quadrasChartMax(), getChartMinWidth(quadrasChartData()[0].pontos.length, 60) - 80, 200)" [attr.stroke]="serie.cor" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" [attr.transform]="'translate(60, 20)'"/>
               @for (ponto of serie.pontos; track $index; let j = $index) {
-                @if (serie.pontos.length <= 60) {
-                  <circle
-                    [attr.cx]="60 + (serie.pontos.length > 1 ? j * (720 / (serie.pontos.length - 1)) : 360)"
-                    [attr.cy]="getGridY(ponto.valor, quadrasChartMax(), 200) + 20"
-                    r="4" [attr.fill]="serie.cor" stroke="white" stroke-width="2" class="chart-dot"
-                  />
-                }
+                <circle
+                  [attr.cx]="60 + (serie.pontos.length > 1 ? j * ((getChartMinWidth(quadrasChartData()[0].pontos.length, 60) - 80) / (serie.pontos.length - 1)) : (getChartMinWidth(quadrasChartData()[0].pontos.length, 60) - 80) / 2)"
+                  [attr.cy]="getGridY(ponto.valor, quadrasChartMax(), 200) + 20"
+                  r="4" [attr.fill]="serie.cor" stroke="white" stroke-width="2" class="chart-dot"
+                />
+                <text
+                  [attr.x]="60 + (serie.pontos.length > 1 ? j * ((getChartMinWidth(quadrasChartData()[0].pontos.length, 60) - 80) / (serie.pontos.length - 1)) : (getChartMinWidth(quadrasChartData()[0].pontos.length, 60) - 80) / 2)"
+                  [attr.y]="getGridY(ponto.valor, quadrasChartMax(), 200) + 12"
+                  class="bar-value" text-anchor="middle" [attr.fill]="serie.cor"
+                >{{ ponto.valor }}</text>
               }
             }
             @if (quadrasChartData().length > 0) {
               @for (ponto of quadrasChartData()[0].pontos; track $index; let i = $index) {
-                @if (i % getLabelInterval(quadrasChartData()[0].pontos.length) === 0) {
-                  <text
-                    [attr.x]="60 + (quadrasChartData()[0].pontos.length > 1 ? i * (720 / (quadrasChartData()[0].pontos.length - 1)) : 360)"
-                    [attr.y]="244" class="bar-label" text-anchor="middle"
-                  >{{ formatGroupLabel(ponto.mes, quadrasAgrupamento()) }}</text>
-                }
+                <text
+                  [attr.x]="60 + (quadrasChartData()[0].pontos.length > 1 ? i * ((getChartMinWidth(quadrasChartData()[0].pontos.length, 60) - 80) / (quadrasChartData()[0].pontos.length - 1)) : (getChartMinWidth(quadrasChartData()[0].pontos.length, 60) - 80) / 2)"
+                  [attr.y]="244" class="bar-label" text-anchor="middle"
+                >{{ formatGroupLabel(ponto.mes, quadrasAgrupamento()) }}</text>
               }
             }
           </svg>
@@ -514,28 +553,31 @@
     <div class="chart-container">
       @if (clienteChartData().length > 0) {
         <div class="chart-wrapper">
-          <svg class="chart-svg" viewBox="0 0 800 260" preserveAspectRatio="xMidYMid meet">
+          <svg class="chart-svg" [attr.viewBox]="'0 0 ' + getChartMinWidth(clienteChartData().length) + ' 260'" preserveAspectRatio="xMinYMid meet" [style.min-width.px]="getChartMinWidth(clienteChartData().length)">
             @for (line of getGridLines(clienteChartMax()); track line) {
-              <line [attr.x1]="50" [attr.y1]="getGridY(line, clienteChartMax(), 200) + 20" [attr.x2]="780" [attr.y2]="getGridY(line, clienteChartMax(), 200) + 20" class="grid-line"/>
+              <line [attr.x1]="50" [attr.y1]="getGridY(line, clienteChartMax(), 200) + 20" [attr.x2]="getChartMinWidth(clienteChartData().length) - 20" [attr.y2]="getGridY(line, clienteChartMax(), 200) + 20" class="grid-line"/>
               <text [attr.x]="45" [attr.y]="getGridY(line, clienteChartMax(), 200) + 25" class="grid-label" text-anchor="end">{{ line }}</text>
             }
             @for (item of clienteChartData(); track item.fullDate; let i = $index) {
               <g class="bar-group">
                 <rect
-                  [attr.x]="60 + i * ((720) / clienteChartData().length) + ((720) / clienteChartData().length - getBarWidth(clienteChartData().length, 720)) / 2"
+                  [attr.x]="60 + i * ((getChartMinWidth(clienteChartData().length) - 80) / clienteChartData().length) + ((getChartMinWidth(clienteChartData().length) - 80) / clienteChartData().length - getBarWidth(clienteChartData().length, getChartMinWidth(clienteChartData().length) - 80)) / 2"
                   [attr.y]="getBarY(item.value, clienteChartMax(), 200) + 20"
-                  [attr.width]="getBarWidth(clienteChartData().length, 720)"
+                  [attr.width]="getBarWidth(clienteChartData().length, getChartMinWidth(clienteChartData().length) - 80)"
                   [attr.height]="getBarHeight(item.value, clienteChartMax(), 200)"
                   class="chart-bar cliente-bar" rx="3"
                 />
                 @if (item.value > 0) {
-                  <text [attr.x]="60 + i * ((720) / clienteChartData().length) + ((720) / clienteChartData().length) / 2" [attr.y]="getBarY(item.value, clienteChartMax(), 200) + 14" class="bar-value" text-anchor="middle">{{ item.value }}</text>
+                  <text
+                    [attr.x]="60 + i * ((getChartMinWidth(clienteChartData().length) - 80) / clienteChartData().length) + ((getChartMinWidth(clienteChartData().length) - 80) / clienteChartData().length) / 2"
+                    [attr.y]="getBarY(item.value, clienteChartMax(), 200) + 14"
+                    class="bar-value" text-anchor="middle"
+                  >{{ item.value }}</text>
                 }
-                @if (i % getLabelInterval(clienteChartData().length) === 0) {
-                  <text [attr.x]="60 + i * ((720) / clienteChartData().length) + ((720) / clienteChartData().length) / 2" [attr.y]="244" class="bar-label" text-anchor="middle"
-                    [attr.transform]="shouldRotateLabels(clienteChartData().length) ? 'rotate(-45,' + (60 + i * ((720) / clienteChartData().length) + ((720) / clienteChartData().length) / 2) + ',244)' : ''"
-                  >{{ item.label }}</text>
-                }
+                <text
+                  [attr.x]="60 + i * ((getChartMinWidth(clienteChartData().length) - 80) / clienteChartData().length) + ((getChartMinWidth(clienteChartData().length) - 80) / clienteChartData().length) / 2"
+                  [attr.y]="244" class="bar-label" text-anchor="middle"
+                >{{ item.label }}</text>
               </g>
             }
           </svg>
@@ -608,28 +650,31 @@
     <div class="chart-container">
       @if (entregadorChartData().length > 0) {
         <div class="chart-wrapper">
-          <svg class="chart-svg" viewBox="0 0 800 260" preserveAspectRatio="xMidYMid meet">
+          <svg class="chart-svg" [attr.viewBox]="'0 0 ' + getChartMinWidth(entregadorChartData().length) + ' 260'" preserveAspectRatio="xMinYMid meet" [style.min-width.px]="getChartMinWidth(entregadorChartData().length)">
             @for (line of getGridLines(entregadorChartMax()); track line) {
-              <line [attr.x1]="50" [attr.y1]="getGridY(line, entregadorChartMax(), 200) + 20" [attr.x2]="780" [attr.y2]="getGridY(line, entregadorChartMax(), 200) + 20" class="grid-line"/>
+              <line [attr.x1]="50" [attr.y1]="getGridY(line, entregadorChartMax(), 200) + 20" [attr.x2]="getChartMinWidth(entregadorChartData().length) - 20" [attr.y2]="getGridY(line, entregadorChartMax(), 200) + 20" class="grid-line"/>
               <text [attr.x]="45" [attr.y]="getGridY(line, entregadorChartMax(), 200) + 25" class="grid-label" text-anchor="end">{{ line }}</text>
             }
             @for (item of entregadorChartData(); track item.fullDate; let i = $index) {
               <g class="bar-group">
                 <rect
-                  [attr.x]="60 + i * ((720) / entregadorChartData().length) + ((720) / entregadorChartData().length - getBarWidth(entregadorChartData().length, 720)) / 2"
+                  [attr.x]="60 + i * ((getChartMinWidth(entregadorChartData().length) - 80) / entregadorChartData().length) + ((getChartMinWidth(entregadorChartData().length) - 80) / entregadorChartData().length - getBarWidth(entregadorChartData().length, getChartMinWidth(entregadorChartData().length) - 80)) / 2"
                   [attr.y]="getBarY(item.value, entregadorChartMax(), 200) + 20"
-                  [attr.width]="getBarWidth(entregadorChartData().length, 720)"
+                  [attr.width]="getBarWidth(entregadorChartData().length, getChartMinWidth(entregadorChartData().length) - 80)"
                   [attr.height]="getBarHeight(item.value, entregadorChartMax(), 200)"
                   class="chart-bar entregador-bar" rx="3"
                 />
                 @if (item.value > 0) {
-                  <text [attr.x]="60 + i * ((720) / entregadorChartData().length) + ((720) / entregadorChartData().length) / 2" [attr.y]="getBarY(item.value, entregadorChartMax(), 200) + 14" class="bar-value" text-anchor="middle">{{ formatCurrency(item.value) }}</text>
+                  <text
+                    [attr.x]="60 + i * ((getChartMinWidth(entregadorChartData().length) - 80) / entregadorChartData().length) + ((getChartMinWidth(entregadorChartData().length) - 80) / entregadorChartData().length) / 2"
+                    [attr.y]="getBarY(item.value, entregadorChartMax(), 200) + 14"
+                    class="bar-value" text-anchor="middle"
+                  >{{ formatCurrency(item.value) }}</text>
                 }
-                @if (i % getLabelInterval(entregadorChartData().length) === 0) {
-                  <text [attr.x]="60 + i * ((720) / entregadorChartData().length) + ((720) / entregadorChartData().length) / 2" [attr.y]="244" class="bar-label" text-anchor="middle"
-                    [attr.transform]="shouldRotateLabels(entregadorChartData().length) ? 'rotate(-45,' + (60 + i * ((720) / entregadorChartData().length) + ((720) / entregadorChartData().length) / 2) + ',244)' : ''"
-                  >{{ item.label }}</text>
-                }
+                <text
+                  [attr.x]="60 + i * ((getChartMinWidth(entregadorChartData().length) - 80) / entregadorChartData().length) + ((getChartMinWidth(entregadorChartData().length) - 80) / entregadorChartData().length) / 2"
+                  [attr.y]="244" class="bar-label" text-anchor="middle"
+                >{{ item.label }}</text>
               </g>
             }
           </svg>

@@ -716,7 +716,25 @@
 .chart-wrapper {
   width: 100%;
   overflow-x: auto;
-  padding-bottom: 8px;
+  padding-bottom: 12px;
+}
+
+.chart-wrapper::-webkit-scrollbar {
+  height: 8px;
+}
+
+.chart-wrapper::-webkit-scrollbar-track {
+  background: var(--bg-secondary, #f1f1f1);
+  border-radius: 4px;
+}
+
+.chart-wrapper::-webkit-scrollbar-thumb {
+  background: var(--text-secondary, #aaa);
+  border-radius: 4px;
+}
+
+.chart-wrapper::-webkit-scrollbar-thumb:hover {
+  background: var(--text-primary, #888);
 }
 
 .chart-svg {

@@ -38,6 +38,11 @@ export class PainelPrincipal implements OnInit {
   estoqueDataInicio = signal('');
   estoqueDataFim = signal('');
   estoqueAgrupamento = signal<Agrupamento>('mes');
+  estoqueSelecionadas = signal<number[]>([]);
+  estoqueSearchTerm = signal('');
+  showEstoqueDropdown = signal(false);
+
+  readonly CORES_ESTOQUE = ['#1B7B4F', '#3498DB', '#E67E22', '#9B59B6', '#E74C3C', '#1ABC9C', '#F39C12', '#2980B9', '#8E44AD', '#D35400'];
 
   // ==================== SEÇÃO 3: QUADRAS ====================
   quadrasDataInicio = signal('');
@@ -218,8 +223,22 @@ export class PainelPrincipal implements OnInit {
     return Math.max(...data.map(d => d.quantidade), 1);
   });
 
+  estoqueDisponiveis = computed(() => {
+    return this.variaveis().map(v => ({ id: v.id, nome: v.nome, quantidade: v.quantidade }));
+  });
+
+  estoqueFiltradas = computed(() => {
+    const search = this.estoqueSearchTerm().toLowerCase().trim();
+    if (!search) return this.estoqueDisponiveis();
+    return this.estoqueDisponiveis().filter(v => v.nome.toLowerCase().includes(search));
+  });
+
   estoqueHistorico = computed(() => {
-    const variaveis = this.variaveis();
+    const todasVariaveis = this.variaveis();
+    const selecionadas = this.estoqueSelecionadas();
+    const variaveis = selecionadas.length > 0
+      ? selecionadas.map(id => todasVariaveis.find(v => v.id === id)).filter((v): v is typeof todasVariaveis[0] => v != null)
+      : todasVariaveis;
     const vendas = this.vendas();
     const inicio = this.estoqueDataInicio();
     const fim = this.estoqueDataFim();
@@ -298,7 +317,7 @@ export class PainelPrincipal implements OnInit {
         });
       }
 
-      return { nome: variavel.nome, cor: this.CORES_QUADRAS[idx % this.CORES_QUADRAS.length], pontos };
+      return { nome: variavel.nome, cor: this.CORES_ESTOQUE[idx % this.CORES_ESTOQUE.length], pontos };
     });
   });
 
@@ -515,6 +534,29 @@ export class PainelPrincipal implements OnInit {
   updateEntregadorFim(event: Event) { this.entregadorDataFim.set((event.target as HTMLInputElement).value); }
   updateEntregador(event: Event) { this.entregadorSelecionadoId.set((event.target as HTMLSelectElement).value); }
 
+  // Estoque selector
+  toggleEstoqueDropdown() { this.showEstoqueDropdown.update(v => !v); }
+  updateEstoqueSearch(event: Event) { this.estoqueSearchTerm.set((event.target as HTMLInputElement).value); }
+
+  toggleEstoqueVariavel(id: number) {
+    const current = this.estoqueSelecionadas();
+    if (current.includes(id)) this.estoqueSelecionadas.set(current.filter(v => v !== id));
+    else if (current.length < 10) this.estoqueSelecionadas.set([...current, id]);
+  }
+
+  isEstoqueSelecionada(id: number): boolean { return this.estoqueSelecionadas().includes(id); }
+  removeEstoqueVariavel(id: number) { this.estoqueSelecionadas.update(list => list.filter(v => v !== id)); }
+
+  getEstoqueNome(id: number): string {
+    const v = this.variaveis().find(x => x.id === id);
+    return v ? v.nome : '';
+  }
+
+  getEstoqueCor(id: number): string {
+    const idx = this.estoqueSelecionadas().indexOf(id);
+    return idx >= 0 ? this.CORES_ESTOQUE[idx % this.CORES_ESTOQUE.length] : '#ccc';
+  }
+
   toggleQuadra(quadra: string) {
     const current = this.quadrasSelecionadas();
     if (current.includes(quadra)) this.quadrasSelecionadas.set(current.filter(q => q !== quadra));
@@ -592,6 +634,10 @@ export class PainelPrincipal implements OnInit {
     return Math.max(minWidth, Math.min(maxWidth, available));
   }
 
+  getChartMinWidth(dataCount: number, minPerItem: number = 50): number {
+    return Math.max(500, dataCount * minPerItem);
+  }
+
   // Tooltip
   activeTooltip = signal<{ section: string; index: number; x: number; y: number } | null>(null);
   showTooltip(section: string, index: number, event: MouseEvent) {
@@ -602,6 +648,7 @@ export class PainelPrincipal implements OnInit {
 
   onDocumentClick(event: Event) {
     const target = event.target as HTMLElement;
+    if (!target.closest('.estoque-selector')) this.showEstoqueDropdown.set(false);
     if (!target.closest('.quadra-selector')) this.showQuadraDropdown.set(false);
     if (!target.closest('.cliente-selector')) this.showClienteDropdown.set(false);
     if (!target.closest('.summary-card')) this.cardDropdownAberto.set(null);
