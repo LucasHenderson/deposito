@@ -7,6 +7,7 @@ import { EnderecoService } from '../../services/endereco.service';
 import { EntregadorService } from '../../services/entregador.service';
 import { ProdutoService } from '../../services/produto.service';
 import { Venda, VendaFormData, StatusVenda, FormaPagamento, ItemVenda, PagamentoVenda } from '../../models/venda.model';
+import { VariavelEstoqueService } from '../../services/variavel-estoque.service';
 import { NotificationService } from '../../services/notification.service';
 import { AuthService } from '../../services/auth.service';
 import { LogService } from '../../services/log.service';
@@ -30,6 +31,7 @@ export class Vendas implements OnInit {
   private enderecoService = inject(EnderecoService);
   private entregadorService = inject(EntregadorService);
   private produtoService = inject(ProdutoService);
+  private variavelEstoqueService = inject(VariavelEstoqueService);
   private notificationService = inject(NotificationService);
   private authService = inject(AuthService);
   private logService = inject(LogService);
@@ -40,6 +42,7 @@ export class Vendas implements OnInit {
     this.entregadorService.carregarEntregadores();
     this.produtoService.carregarProdutos();
     this.vendaService.carregarVendas();
+    this.variavelEstoqueService.carregarVariaveis();
   }
 
   isAdmin = this.authService.isAdmin;
@@ -74,6 +77,7 @@ export class Vendas implements OnInit {
 
   // Controle de UI
   mostrarAdicionarProduto = signal<boolean>(false);
+  erroEstoque = signal<string>('');
 
   // Agendamento de notificação (modal pendente)
   agendarNotificacao = signal<boolean>(false);
@@ -393,6 +397,7 @@ limparFiltros() {
     this.produtoSelecionadoId.set('');
     this.quantidadeProduto.set(1);
     this.clienteSearchTerm.set('');
+    this.erroEstoque.set('');
   }
 
   // ===== PAGAMENTOS MÚLTIPLOS =====
@@ -434,12 +439,14 @@ limparFiltros() {
   updateProdutoSelecionado(event: Event) {
     const select = event.target as HTMLSelectElement;
     this.produtoSelecionadoId.set(select.value);
+    this.erroEstoque.set('');
   }
 
   updateQuantidadeProduto(event: Event) {
     const input = event.target as HTMLInputElement;
     const value = parseInt(input.value);
     this.quantidadeProduto.set(value > 0 ? value : 1);
+    this.erroEstoque.set('');
   }
 
   recalcularItens() {
@@ -468,6 +475,14 @@ limparFiltros() {
 
     if (!produto || quantidade <= 0) return;
 
+    // Validar estoque antes de adicionar
+    const erroEstoque = this.validarEstoqueProduto(produto, quantidade);
+    if (erroEstoque) {
+      this.erroEstoque.set(erroEstoque);
+      return;
+    }
+    this.erroEstoque.set('');
+
     const novoItem: ItemVenda = {
       produtoId: Number(produtoId),
       produtoNome: produto.nome,
@@ -477,10 +492,10 @@ limparFiltros() {
     };
 
     this.tempItens.update(itens => [...itens, novoItem]);
-    
+
     // Atualiza valor total automaticamente
     this.tempValorTotal.set(this.totalItensTemp());
-    
+
     // Reset
     this.produtoSelecionadoId.set('');
     this.quantidadeProduto.set(1);
@@ -600,16 +615,18 @@ limparFiltros() {
       observacoes: this.tempObservacoes()
     };
 
-    this.vendaService.createVenda(vendaData).subscribe(venda => {
-      if (venda) {
+    this.vendaService.createVenda(vendaData).subscribe({
+      next: (venda) => {
+        this.variavelEstoqueService.carregarVariaveis();
         this.logService.registrar('criar', 'Vendas',
           `Venda criada para ${venda.clienteNome} — ${this.formatarMoeda(venda.valorTotal)}`,
           `Cliente: ${venda.clienteNome}\nEndereço: ${venda.enderecoFormatado}\nEntregador: ${venda.entregadorIdentificador}\nValor: ${this.formatarMoeda(venda.valorTotal)}\nItens: ${venda.itens.map(i => `${i.produtoNome} x${i.quantidade}`).join(', ')}\nPagamentos: ${venda.pagamentos.map(p => `${p.forma} ${this.formatarMoeda(p.valor)}`).join(', ')}\nObservações: ${venda.observacoes || 'Nenhuma'}`,
           this.authService.usuarioLogado()?.usuario ?? 'desconhecido'
         );
         this.closeModal();
-      } else {
-        alert('Erro ao criar venda. Verifique o estoque disponível.');
+      },
+      error: (err: Error) => {
+        alert(err.message);
       }
     });
   }
@@ -809,8 +826,9 @@ limparFiltros() {
 
     const antes = `Cliente: ${venda.clienteNome}\nEndereço: ${venda.enderecoFormatado}\nEntregador: ${venda.entregadorIdentificador}\nValor: ${this.formatarMoeda(venda.valorTotal)}\nItens: ${venda.itens.map(i => `${i.produtoNome} x${i.quantidade}`).join(', ')}\nPagamentos: ${venda.pagamentos.map(p => `${p.forma} ${this.formatarMoeda(p.valor)}`).join(', ')}\nObservações: ${venda.observacoes || 'Nenhuma'}`;
 
-    this.vendaService.updateVenda(venda.id, this.formData()).subscribe(sucesso => {
-      if (sucesso) {
+    this.vendaService.updateVenda(venda.id, this.formData()).subscribe({
+      next: () => {
+        this.variavelEstoqueService.carregarVariaveis();
         const vendaAtualizada = this.vendaService.getVendaById(venda.id);
         const depois = vendaAtualizada
           ? `Cliente: ${vendaAtualizada.clienteNome}\nEndereço: ${vendaAtualizada.enderecoFormatado}\nEntregador: ${vendaAtualizada.entregadorIdentificador}\nValor: ${this.formatarMoeda(vendaAtualizada.valorTotal)}\nItens: ${vendaAtualizada.itens.map(i => `${i.produtoNome} x${i.quantidade}`).join(', ')}\nPagamentos: ${vendaAtualizada.pagamentos.map(p => `${p.forma} ${this.formatarMoeda(p.valor)}`).join(', ')}\nObservações: ${vendaAtualizada.observacoes || 'Nenhuma'}`
@@ -823,8 +841,9 @@ limparFiltros() {
           antes
         );
         this.closeModal();
-      } else {
-        alert('Erro ao atualizar venda.');
+      },
+      error: (err: Error) => {
+        alert(err.message);
       }
     });
   }
@@ -842,6 +861,7 @@ limparFiltros() {
 
     this.vendaService.deleteVenda(venda.id).subscribe(sucesso => {
       if (sucesso) {
+        this.variavelEstoqueService.carregarVariaveis();
         // Recarregar notificações (CASCADE remove as da venda excluída no banco)
         this.notificationService.carregarNotificacoes();
 
@@ -930,6 +950,30 @@ confirmarTogglePendente() {
     if ((event.target as HTMLElement).classList.contains('modal-overlay')) {
       this.closeModal();
     }
+  }
+
+  // ===== VALIDAÇÃO DE ESTOQUE =====
+
+  private validarEstoqueProduto(produto: Produto, quantidade: number): string | null {
+    // Soma as quantidades já adicionadas no carrinho para o mesmo produto
+    const quantidadeJaNoCarrinho = this.tempItens()
+      .filter(item => item.produtoId === produto.id)
+      .reduce((sum, item) => sum + item.quantidade, 0);
+
+    const quantidadeTotal = quantidadeJaNoCarrinho + quantidade;
+
+    for (const vinculo of produto.vinculos) {
+      if (vinculo.tipoInteracao !== 'reduz') continue;
+
+      const variavel = this.variavelEstoqueService.getVariavelById(vinculo.variavelEstoqueId);
+      if (!variavel) continue;
+
+      if (variavel.quantidade < quantidadeTotal) {
+        return `Estoque insuficiente para '${variavel.nome}'. Disponível: ${variavel.quantidade}, Necessário: ${quantidadeTotal}`;
+      }
+    }
+
+    return null;
   }
 
   // ===== HELPERS =====

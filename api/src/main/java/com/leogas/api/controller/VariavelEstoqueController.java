@@ -2,6 +2,7 @@ package com.leogas.api.controller;
 
 import com.leogas.api.dto.VariavelEstoqueRequest;
 import com.leogas.api.dto.VariavelEstoqueResponse;
+import com.leogas.api.entity.AjusteEstoque;
 import com.leogas.api.service.VariavelEstoqueService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -51,5 +52,15 @@ public class VariavelEstoqueController {
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    @GetMapping("/todas")
+    public ResponseEntity<List<VariavelEstoqueResponse>> listarTodasIncluindoDeletadas() {
+        return ResponseEntity.ok(variavelEstoqueService.listarTodasIncluindoDeletadas());
+    }
+
+    @GetMapping("/ajustes")
+    public ResponseEntity<List<AjusteEstoque>> listarAjustes() {
+        return ResponseEntity.ok(variavelEstoqueService.listarAjustes());
     }
 }

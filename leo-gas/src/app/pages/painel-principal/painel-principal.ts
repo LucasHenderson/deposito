@@ -82,6 +82,8 @@ export class PainelPrincipal implements OnInit {
   todasQuadras = this.enderecoService.getTodasQuadras();
   entregadores = this.entregadorService.getEntregadores();
   variaveis = this.variavelEstoqueService.getVariaveis();
+  todasVariaveis = this.variavelEstoqueService.getTodasVariaveis();
+  ajustesEstoque = this.variavelEstoqueService.getAjustes();
   adiantamentos = this.adiantamentoService.getAdiantamentos();
 
   // ==================== CARDS RESUMO ====================
@@ -232,7 +234,7 @@ export class PainelPrincipal implements OnInit {
   });
 
   estoqueDisponiveis = computed(() => {
-    return this.variaveis().map(v => ({ id: v.id, nome: v.nome, quantidade: v.quantidade }));
+    return this.todasVariaveis().map(v => ({ id: v.id, nome: v.nome, quantidade: v.quantidade }));
   });
 
   estoqueFiltradas = computed(() => {
@@ -242,12 +244,13 @@ export class PainelPrincipal implements OnInit {
   });
 
   estoqueHistorico = computed(() => {
-    const todasVariaveis = this.variaveis();
+    const todasVariaveis = this.todasVariaveis();
     const selecionadas = this.estoqueSelecionadas();
     const variaveis = selecionadas.length > 0
       ? selecionadas.map(id => todasVariaveis.find(v => v.id === id)).filter((v): v is typeof todasVariaveis[0] => v != null)
       : todasVariaveis;
     const vendas = this.vendas();
+    const ajustes = this.ajustesEstoque();
     const inicio = this.estoqueDataInicio();
     const fim = this.estoqueDataFim();
     const agrupamento = this.estoqueAgrupamento();
@@ -272,7 +275,9 @@ export class PainelPrincipal implements OnInit {
     return variaveis.map((variavel, idx) => {
       const estoqueAtualVal = variavel.quantidade;
       const produtosVinculados = produtos.filter(p => p.vinculos.some(v => v.variavelEstoqueId === variavel.id));
+      const ajustesDaVariavel = ajustes.filter(a => a.variavelEstoqueId === variavel.id);
 
+      // Impacto de vendas por dia
       const impactoPorDia = new Map<string, number>();
       vendas.forEach(venda => {
         const key = this.getDateKey(new Date(venda.dataVenda), 'dia');
@@ -290,6 +295,13 @@ export class PainelPrincipal implements OnInit {
         });
       });
 
+      // Impacto de ajustes manuais por dia
+      ajustesDaVariavel.forEach(ajuste => {
+        const key = this.getDateKey(new Date(ajuste.dataAjuste), 'dia');
+        impactoPorDia.set(key, (impactoPorDia.get(key) || 0) + ajuste.delta);
+      });
+
+      // Ajusta estoque corrente revertendo impactos futuros (após o período)
       let estoqueCorrente = estoqueAtualVal;
       vendas.filter(v => new Date(v.dataVenda) > dataFim).forEach(venda => {
         venda.itens.forEach(item => {
@@ -303,6 +315,11 @@ export class PainelPrincipal implements OnInit {
           }
         });
       });
+
+      // Reverte ajustes manuais futuros (após o período)
+      ajustesDaVariavel
+        .filter(a => new Date(a.dataAjuste) > dataFim)
+        .forEach(a => { estoqueCorrente -= a.delta; });
 
       const pontosDiarios: { data: string; valor: number }[] = [];
       for (let i = diasKeys.length - 1; i >= 0; i--) {

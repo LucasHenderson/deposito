@@ -3,6 +3,8 @@ package com.leogas.api.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "variavel_estoque")
 @Getter
@@ -21,4 +23,7 @@ public class VariavelEstoque {
 
     @Column(nullable = false)
     private Integer quantidade = 0;
+
+    @Column(name = "data_exclusao")
+    private LocalDateTime dataExclusao;
 }

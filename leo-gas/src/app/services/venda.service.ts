@@ -1,6 +1,6 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map, tap, catchError, of } from 'rxjs';
+import { Observable, map, tap, catchError, of, throwError } from 'rxjs';
 import { Venda, VendaFormData, StatusVenda } from '../models/venda.model';
 
 const API_URL = 'http://localhost:8080/api/vendas';
@@ -31,7 +31,7 @@ export class VendaService {
     return this.vendas().length;
   }
 
-  createVenda(data: VendaFormData): Observable<Venda | null> {
+  createVenda(data: VendaFormData): Observable<Venda> {
     const request = {
       clienteId: data.clienteId,
       enderecoId: data.enderecoId,
@@ -54,8 +54,8 @@ export class VendaService {
         this.vendas.update(list => [nova, ...list]);
       }),
       catchError((err) => {
-        console.error('Erro ao criar venda:', err);
-        return of(null);
+        const mensagem = err.error?.erro || 'Erro ao criar venda.';
+        return throwError(() => new Error(mensagem));
       })
     );
   }
@@ -86,8 +86,8 @@ export class VendaService {
       }),
       map(() => true),
       catchError((err) => {
-        console.error('Erro ao atualizar venda:', err);
-        return of(false);
+        const mensagem = err.error?.erro || 'Erro ao atualizar venda.';
+        return throwError(() => new Error(mensagem));
       })
     );
   }

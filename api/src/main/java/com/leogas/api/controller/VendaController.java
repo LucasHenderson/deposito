@@ -28,10 +28,13 @@ public class VendaController {
     }
 
     @PostMapping
-    public ResponseEntity<VendaResponse> criar(@Valid @RequestBody VendaRequest request) {
+    public ResponseEntity<?> criar(@Valid @RequestBody VendaRequest request) {
         try {
             VendaResponse response = vendaService.criar(request);
             return ResponseEntity.status(201).body(response);
+        } catch (IllegalStateException e) {
+            log.warn("Estoque insuficiente ao criar venda: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("erro", e.getMessage()));
         } catch (RuntimeException e) {
             log.error("Erro ao criar venda: {}", e.getMessage(), e);
             return ResponseEntity.badRequest().build();
@@ -39,11 +42,14 @@ public class VendaController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<VendaResponse> atualizar(@PathVariable Long id,
+    public ResponseEntity<?> atualizar(@PathVariable Long id,
                                                     @Valid @RequestBody VendaRequest request) {
         try {
             VendaResponse response = vendaService.atualizar(id, request);
             return ResponseEntity.ok(response);
+        } catch (IllegalStateException e) {
+            log.warn("Estoque insuficiente ao atualizar venda {}: {}", id, e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("erro", e.getMessage()));
         } catch (RuntimeException e) {
             log.error("Erro ao atualizar venda {}: {}", id, e.getMessage(), e);
             return ResponseEntity.notFound().build();

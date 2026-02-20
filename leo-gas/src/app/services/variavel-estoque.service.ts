@@ -1,7 +1,7 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map, tap, catchError, of } from 'rxjs';
-import { VariavelEstoque, VariavelEstoqueFormData } from '../models/variavel-estoque.model';
+import { VariavelEstoque, VariavelEstoqueFormData, AjusteEstoque } from '../models/variavel-estoque.model';
 
 const API_URL = 'http://localhost:8080/api/variaveis-estoque';
 
@@ -11,14 +11,30 @@ const API_URL = 'http://localhost:8080/api/variaveis-estoque';
 export class VariavelEstoqueService {
   private http = inject(HttpClient);
   private variaveis = signal<VariavelEstoque[]>([]);
+  private todasVariaveis = signal<VariavelEstoque[]>([]);
+  private ajustes = signal<AjusteEstoque[]>([]);
 
   getVariaveis() {
     return this.variaveis.asReadonly();
   }
 
+  getTodasVariaveis() {
+    return this.todasVariaveis.asReadonly();
+  }
+
+  getAjustes() {
+    return this.ajustes.asReadonly();
+  }
+
   carregarVariaveis(): void {
     this.http.get<VariavelEstoque[]>(API_URL).subscribe(data => {
       this.variaveis.set(data);
+    });
+    this.http.get<VariavelEstoque[]>(`${API_URL}/todas`).subscribe(data => {
+      this.todasVariaveis.set(data);
+    });
+    this.http.get<AjusteEstoque[]>(`${API_URL}/ajustes`).subscribe(data => {
+      this.ajustes.set(data);
     });
   }
 

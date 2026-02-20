@@ -238,6 +238,13 @@ public class VendaService {
                 if (reverter) {
                     variavel.setQuantidade(variavel.getQuantidade() + quantidade);
                 } else {
+                    if (variavel.getQuantidade() < quantidade) {
+                        throw new IllegalStateException(
+                            "Estoque insuficiente para '" + variavel.getNome()
+                            + "'. Disponível: " + variavel.getQuantidade()
+                            + ", Necessário: " + quantidade
+                        );
+                    }
                     variavel.setQuantidade(variavel.getQuantidade() - quantidade);
                 }
                 variavelEstoqueRepository.save(variavel);

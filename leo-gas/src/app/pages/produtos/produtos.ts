@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProdutoService } from '../../services/produto.service';
 import { VariavelEstoqueService } from '../../services/variavel-estoque.service';
+import { VendaService } from '../../services/venda.service';
 import { Produto, ProdutoFormData, PrecoPorPagamento, VinculoEstoque, TipoInteracaoEstoque } from '../../models/produto.model';
 import { VariavelEstoque, VariavelEstoqueFormData } from '../../models/variavel-estoque.model';
 
@@ -18,10 +19,12 @@ type SortOrder = 'maior-vendas' | 'menor-vendas' | 'nenhum';
 export class Produtos implements OnInit {
   private produtoService = inject(ProdutoService);
   private variavelEstoqueService = inject(VariavelEstoqueService);
+  private vendaService = inject(VendaService);
 
   ngOnInit(): void {
     this.produtoService.carregarProdutos();
     this.variavelEstoqueService.carregarVariaveis();
+    this.vendaService.carregarVendas();
   }
 
   // Paginação
@@ -69,9 +72,9 @@ export class Produtos implements OnInit {
   searchTerm = signal('');
   sortOrder = signal<SortOrder>('nenhum');
 
-  // Filtro de período para vendas
-  dataInicio = signal<Date | null>(null);
-  dataFim = signal<Date | null>(null);
+  // Filtro de período para vendas (padrão: dia atual)
+  dataInicio = signal<Date | null>(this.getHoje());
+  dataFim = signal<Date | null>(this.getHoje());
 
   // Seção de variáveis expandida
   variaveisExpanded = signal(false);
@@ -80,9 +83,38 @@ export class Produtos implements OnInit {
   produtos = this.produtoService.getProdutos();
   variaveis = this.variavelEstoqueService.getVariaveis();
 
-  // Cache de vendas por período
+  // Vendas por período (calculado a partir das vendas reais do backend)
+  vendas = this.vendaService.getVendas();
+
   vendasPorPeriodo = computed(() => {
-    return this.produtoService.getTodosVendasPorPeriodo(this.dataInicio(), this.dataFim());
+    const vendas = this.vendas();
+    const dataInicio = this.dataInicio();
+    const dataFim = this.dataFim();
+
+    const totais = new Map<string, number>();
+
+    for (const venda of vendas) {
+      const dataVenda = new Date(venda.dataVenda);
+
+      if (dataInicio) {
+        const inicio = new Date(dataInicio);
+        inicio.setHours(0, 0, 0, 0);
+        if (dataVenda < inicio) continue;
+      }
+
+      if (dataFim) {
+        const fim = new Date(dataFim);
+        fim.setHours(23, 59, 59, 999);
+        if (dataVenda > fim) continue;
+      }
+
+      for (const item of venda.itens) {
+        const pid = String(item.produtoId);
+        totais.set(pid, (totais.get(pid) || 0) + item.quantidade);
+      }
+    }
+
+    return totais;
   });
   
   filteredProdutos = computed(() => {
@@ -538,6 +570,12 @@ export class Produtos implements OnInit {
     if (quantidade <= 5) return 'critico';
     if (quantidade <= 15) return 'baixo';
     return 'normal';
+  }
+
+  private getHoje(): Date {
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    return hoje;
   }
 
   private resetForm() {
