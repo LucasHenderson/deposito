@@ -135,6 +135,12 @@ export class VendaService {
     );
   }
 
+  buscarVendasPorQuadra(quadra: string, inicio: string, fim: string): Observable<{ data: string; total: number }[]> {
+    return this.http.get<{ data: string; total: number }[]>(
+      `${API_URL}/contagem-por-quadra`, { params: { quadra, inicio, fim } }
+    );
+  }
+
   // Estatísticas locais computadas sobre o signal
   getTotalVendasHoje(): number {
     const hoje = new Date();

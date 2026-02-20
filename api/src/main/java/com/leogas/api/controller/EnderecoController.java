@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/enderecos")
@@ -47,5 +48,15 @@ public class EnderecoController {
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    @GetMapping("/historico-por-quadra")
+    public ResponseEntity<List<Map<String, Object>>> historicoPorQuadra(@RequestParam String quadra) {
+        return ResponseEntity.ok(enderecoService.historicoQuadra(quadra));
+    }
+
+    @GetMapping("/todas-quadras")
+    public ResponseEntity<List<String>> todasQuadras() {
+        return ResponseEntity.ok(enderecoService.listarTodasQuadras());
     }
 }

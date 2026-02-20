@@ -6,9 +6,11 @@ import com.leogas.api.service.VendaService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -70,6 +72,14 @@ public class VendaController {
             log.error("Erro ao atualizar status da venda {}: {}", id, e.getMessage(), e);
             return ResponseEntity.notFound().build();
         }
+    }
+
+    @GetMapping("/contagem-por-quadra")
+    public ResponseEntity<List<Map<String, Object>>> contagemPorQuadra(
+            @RequestParam String quadra,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fim) {
+        return ResponseEntity.ok(vendaService.contarVendasPorQuadra(quadra, inicio, fim));
     }
 
     @PatchMapping("/{id}/recebimento-pendente")

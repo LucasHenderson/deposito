@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal, OnInit } from '@angular/core';
+import { Component, computed, effect, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { VendaService } from '../../services/venda.service';
@@ -10,6 +10,7 @@ import { AdiantamentoService } from '../../services/adiantamento.service';
 import { VariavelEstoqueService } from '../../services/variavel-estoque.service';
 import { Venda } from '../../models/venda.model';
 import { Adiantamento } from '../../models/adiantamento.model';
+import { forkJoin, map } from 'rxjs';
 
 type Agrupamento = 'dia' | 'mes' | 'ano';
 
@@ -54,6 +55,12 @@ export class PainelPrincipal implements OnInit {
 
   readonly CORES_QUADRAS = ['#1B7B4F', '#3498DB', '#E67E22', '#9B59B6', '#E74C3C'];
 
+  // ==================== SEÇÃO 3.5: VENDAS POR QUADRA ====================
+  vendasQuadraDataInicio = signal('');
+  vendasQuadraDataFim = signal('');
+  vendasQuadraAgrupamento = signal<Agrupamento>('mes');
+  vendasQuadraSelecionada = signal('');
+
   // ==================== SEÇÃO 4: CLIENTE ====================
   clienteDataInicio = signal('');
   clienteDataFim = signal('');
@@ -72,6 +79,7 @@ export class PainelPrincipal implements OnInit {
   vendas = this.vendaService.getVendas();
   clientes = this.clienteService.getClientes();
   enderecos = this.enderecoService.getEnderecos();
+  todasQuadras = this.enderecoService.getTodasQuadras();
   entregadores = this.entregadorService.getEntregadores();
   variaveis = this.variavelEstoqueService.getVariaveis();
   adiantamentos = this.adiantamentoService.getAdiantamentos();
@@ -340,10 +348,39 @@ export class PainelPrincipal implements OnInit {
       .sort((a, b) => a.quadra.localeCompare(b.quadra));
   });
 
+  todasQuadrasDisponiveis = computed(() => {
+    const todas = this.todasQuadras();
+    const ativasMap = new Map<string, number>();
+    this.enderecos().forEach(e => {
+      if (e.quadra) ativasMap.set(e.quadra, (ativasMap.get(e.quadra) || 0) + e.clientesIds.length);
+    });
+    return todas
+      .map(quadra => ({ quadra, totalClientes: ativasMap.get(quadra) || 0 }))
+      .sort((a, b) => a.quadra.localeCompare(b.quadra));
+  });
+
   quadrasFiltradas = computed(() => {
     const search = this.quadraSearchTerm().toLowerCase().trim();
-    if (!search) return this.quadrasDisponiveis();
-    return this.quadrasDisponiveis().filter(q => q.quadra.toLowerCase().includes(search));
+    if (!search) return this.todasQuadrasDisponiveis();
+    return this.todasQuadrasDisponiveis().filter(q => q.quadra.toLowerCase().includes(search));
+  });
+
+  private quadrasHistoricoRaw = signal<Map<string, { dataCriacao: string; dataExclusao: string | null }[]>>(new Map());
+
+  private quadrasHistoricoEffect = effect(() => {
+    const selecionadas = this.quadrasSelecionadas();
+    if (selecionadas.length === 0) { this.quadrasHistoricoRaw.set(new Map()); return; }
+    const requests = selecionadas.map(quadra =>
+      this.enderecoService.buscarHistoricoQuadra(quadra).pipe(map(data => ({ quadra, data })))
+    );
+    forkJoin(requests).subscribe({
+      next: (results) => {
+        const m = new Map<string, { dataCriacao: string; dataExclusao: string | null }[]>();
+        results.forEach(r => m.set(r.quadra, r.data));
+        this.quadrasHistoricoRaw.set(m);
+      },
+      error: () => this.quadrasHistoricoRaw.set(new Map())
+    });
   });
 
   quadrasChartData = computed(() => {
@@ -351,20 +388,23 @@ export class PainelPrincipal implements OnInit {
     const inicio = this.quadrasDataInicio();
     const fim = this.quadrasDataFim();
     const agrupamento = this.quadrasAgrupamento();
-    if (selecionadas.length === 0 || !inicio || !fim) return [];
+    const historicoMap = this.quadrasHistoricoRaw();
+    if (selecionadas.length === 0 || !inicio || !fim || historicoMap.size === 0) return [];
 
     const periodKeys = this.generatePeriodKeys(inicio, fim, agrupamento);
     if (periodKeys.length === 0) return [];
 
     return selecionadas.map((quadra, idx) => {
-      const enderecosQuadra = this.enderecos().filter(e => e.quadra === quadra);
-      const clientesIdsQuadra = new Set<number>();
-      enderecosQuadra.forEach(e => e.clientesIds.forEach(id => clientesIdsQuadra.add(id)));
-      const clientesQuadra = this.clientes().filter(c => clientesIdsQuadra.has(c.id));
+      const enderecos = historicoMap.get(quadra) || [];
 
       const pontos = periodKeys.map(key => {
         const fimPeriodo = this.getEndDateForKey(key, agrupamento);
-        const total = clientesQuadra.filter(c => new Date(c.dataCadastro) <= fimPeriodo).length;
+        const total = enderecos.filter(e => {
+          const criacao = new Date(e.dataCriacao);
+          if (criacao > fimPeriodo) return false;
+          if (e.dataExclusao === null) return true;
+          return new Date(e.dataExclusao) > fimPeriodo;
+        }).length;
         return { mes: key, valor: total };
       });
 
@@ -379,6 +419,50 @@ export class PainelPrincipal implements OnInit {
     data.forEach(serie => serie.pontos.forEach(p => { if (p.valor > max) max = p.valor; }));
     return max;
   });
+
+  // ==================== COMPUTED: VENDAS POR QUADRA ====================
+  private vendasQuadraRaw = signal<{ data: string; total: number }[]>([]);
+
+  private vendasQuadraEffect = effect(() => {
+    const quadra = this.vendasQuadraSelecionada();
+    const inicio = this.vendasQuadraDataInicio();
+    const fim = this.vendasQuadraDataFim();
+    if (!quadra || !inicio || !fim) { this.vendasQuadraRaw.set([]); return; }
+    this.vendaService.buscarVendasPorQuadra(quadra, inicio, fim).subscribe({
+      next: (data) => this.vendasQuadraRaw.set(data),
+      error: () => this.vendasQuadraRaw.set([])
+    });
+  });
+
+  vendasQuadraChartData = computed(() => {
+    const raw = this.vendasQuadraRaw();
+    const inicio = this.vendasQuadraDataInicio();
+    const fim = this.vendasQuadraDataFim();
+    const agrupamento = this.vendasQuadraAgrupamento();
+    if (raw.length === 0 || !inicio || !fim) return [];
+
+    const periodKeys = this.generatePeriodKeys(inicio, fim, agrupamento);
+    const agrupado = new Map<string, number>();
+    periodKeys.forEach(k => agrupado.set(k, 0));
+    raw.forEach(r => {
+      const key = this.getDateKey(new Date(r.data + 'T00:00:00'), agrupamento);
+      agrupado.set(key, (agrupado.get(key) || 0) + r.total);
+    });
+
+    return periodKeys.map(key => ({
+      label: this.formatGroupLabel(key, agrupamento),
+      value: agrupado.get(key) || 0,
+      fullDate: key
+    }));
+  });
+
+  vendasQuadraChartMax = computed(() => {
+    const data = this.vendasQuadraChartData();
+    if (data.length === 0) return 1;
+    return Math.max(...data.map(d => d.value), 1);
+  });
+
+  totalVendasQuadraPeriodo = computed(() => this.vendasQuadraChartData().reduce((sum, d) => sum + d.value, 0));
 
   // ==================== COMPUTED: CLIENTE ====================
   clientesFiltrados = computed(() => {
@@ -492,15 +576,16 @@ export class PainelPrincipal implements OnInit {
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
     const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     const formatDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    const inicioAmplo = new Date(2024, 0, 1);
 
-    this.vendasDataInicio.set(formatDate(inicioAmplo));
+    this.vendasDataInicio.set(formatDate(firstDay));
     this.vendasDataFim.set(formatDate(lastDay));
-    this.estoqueDataInicio.set(formatDate(inicioAmplo));
+    this.estoqueDataInicio.set(formatDate(firstDay));
     this.estoqueDataFim.set(formatDate(lastDay));
-    this.quadrasDataInicio.set(formatDate(new Date(2024, 0, 1)));
+    this.quadrasDataInicio.set(formatDate(firstDay));
     this.quadrasDataFim.set(formatDate(lastDay));
-    this.clienteDataInicio.set(formatDate(new Date(2024, 0, 1)));
+    this.vendasQuadraDataInicio.set(formatDate(firstDay));
+    this.vendasQuadraDataFim.set(formatDate(lastDay));
+    this.clienteDataInicio.set(formatDate(firstDay));
     this.clienteDataFim.set(formatDate(lastDay));
     this.entregadorDataInicio.set(formatDate(firstDay));
     this.entregadorDataFim.set(formatDate(lastDay));
@@ -512,6 +597,7 @@ export class PainelPrincipal implements OnInit {
       case 'vendas': this.vendasAgrupamento.set(valor); break;
       case 'estoque': this.estoqueAgrupamento.set(valor); break;
       case 'quadras': this.quadrasAgrupamento.set(valor); break;
+      case 'vendasQuadra': this.vendasQuadraAgrupamento.set(valor); break;
       case 'cliente': this.clienteAgrupamento.set(valor); break;
       case 'entregador': this.entregadorAgrupamento.set(valor); break;
     }
@@ -526,6 +612,9 @@ export class PainelPrincipal implements OnInit {
   updateQuadrasFim(event: Event) { this.quadrasDataFim.set((event.target as HTMLInputElement).value); }
   updateQuadraSearch(event: Event) { this.quadraSearchTerm.set((event.target as HTMLInputElement).value); }
   toggleQuadraDropdown() { this.showQuadraDropdown.update(v => !v); }
+  updateVendasQuadraInicio(event: Event) { this.vendasQuadraDataInicio.set((event.target as HTMLInputElement).value); }
+  updateVendasQuadraFim(event: Event) { this.vendasQuadraDataFim.set((event.target as HTMLInputElement).value); }
+  updateVendasQuadra(event: Event) { this.vendasQuadraSelecionada.set((event.target as HTMLSelectElement).value); }
   updateClienteInicio(event: Event) { this.clienteDataInicio.set((event.target as HTMLInputElement).value); }
   updateClienteFim(event: Event) { this.clienteDataFim.set((event.target as HTMLInputElement).value); }
   updateClienteSearch(event: Event) { this.clienteSearchTerm.set((event.target as HTMLInputElement).value); this.showClienteDropdown.set(true); }

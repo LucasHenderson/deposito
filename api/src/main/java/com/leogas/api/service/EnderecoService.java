@@ -10,8 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
-import java.util.List;
+import java.time.LocalDateTime;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -21,7 +21,7 @@ public class EnderecoService {
     private final ClienteRepository clienteRepository;
 
     public List<EnderecoResponse> listarTodos() {
-        return enderecoRepository.findAllWithClientes().stream()
+        return enderecoRepository.findAllActiveWithClientes().stream()
                 .map(this::toResponse)
                 .toList();
     }
@@ -91,13 +91,27 @@ public class EnderecoService {
         Endereco endereco = enderecoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Endereço não encontrado"));
 
-        // Remove endereço de todos os clientes antes de deletar
-        for (Cliente cliente : new HashSet<>(endereco.getClientes())) {
-            cliente.getEnderecos().remove(endereco);
-            clienteRepository.save(cliente);
-        }
+        // Soft delete: marca data de exclusão sem remover associações
+        endereco.setDataExclusao(LocalDateTime.now());
+        enderecoRepository.save(endereco);
+    }
 
-        enderecoRepository.deleteById(id);
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> historicoQuadra(String quadra) {
+        List<Endereco> enderecos = enderecoRepository.findAllByQuadraIncludingDeleted(quadra);
+        List<Map<String, Object>> lista = new ArrayList<>();
+        for (Endereco e : enderecos) {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("dataCriacao", e.getDataCriacao().toString());
+            item.put("dataExclusao", e.getDataExclusao() != null ? e.getDataExclusao().toString() : null);
+            lista.add(item);
+        }
+        return lista;
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> listarTodasQuadras() {
+        return enderecoRepository.findAllDistinctQuadras();
     }
 
     private EnderecoResponse toResponse(Endereco endereco) {

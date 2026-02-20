@@ -8,8 +8,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.sql.Date;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.time.LocalTime;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -195,6 +198,25 @@ public class VendaService {
         vendaRepository.findByIdWithPagamentos(id);
         venda.setRecebimentoPendente(!venda.getRecebimentoPendente());
         return toResponse(vendaRepository.save(venda));
+    }
+
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> contarVendasPorQuadra(String quadra, LocalDate inicio, LocalDate fim) {
+        LocalDateTime dtInicio = inicio.atStartOfDay();
+        LocalDateTime dtFim = fim.atTime(LocalTime.MAX);
+
+        List<Object[]> resultados = vendaRepository.countByQuadraGroupByDia(quadra, dtInicio, dtFim);
+
+        List<Map<String, Object>> lista = new ArrayList<>();
+        for (Object[] row : resultados) {
+            Map<String, Object> item = new LinkedHashMap<>();
+            // O CAST retorna java.sql.Date
+            Date sqlDate = (Date) row[0];
+            item.put("data", sqlDate.toLocalDate().toString());
+            item.put("total", ((Number) row[1]).longValue());
+            lista.add(item);
+        }
+        return lista;
     }
 
     /**

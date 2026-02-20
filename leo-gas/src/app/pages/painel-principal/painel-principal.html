@@ -476,6 +476,103 @@
     </div>
   </div>
 
+  <!-- ===================== SEÇÃO 3.5: VENDAS POR QUADRA ===================== -->
+  <div class="chart-section">
+    <div class="section-header-bar">
+      <div class="section-title-group">
+        <div class="section-icon-badge vendasquadra-badge">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 3v18h18"/><rect x="7" y="10" width="3" height="8" rx="1"/><rect x="14" y="6" width="3" height="12" rx="1"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="section-title">Vendas por Quadra</h2>
+          <p class="section-desc">Visualize o volume de vendas em uma quadra específica</p>
+        </div>
+      </div>
+      @if (vendasQuadraSelecionada()) {
+        <div class="section-stats">
+          <div class="mini-stat">
+            <span class="mini-stat-value">{{ totalVendasQuadraPeriodo() }}</span>
+            <span class="mini-stat-label">vendas no período</span>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="filters-row">
+      <div class="filter-group" style="flex: 1.5;">
+        <label>Quadra</label>
+        <select class="filter-select" [value]="vendasQuadraSelecionada()" (change)="updateVendasQuadra($event)">
+          <option value="">Selecione uma quadra</option>
+          @for (q of todasQuadrasDisponiveis(); track q.quadra) {
+            <option [value]="q.quadra">Qd. {{ q.quadra }} ({{ q.totalClientes }} clientes)</option>
+          }
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Data Início</label>
+        <input type="date" class="filter-input" [value]="vendasQuadraDataInicio()" (change)="updateVendasQuadraInicio($event)">
+      </div>
+      <div class="filter-group">
+        <label>Data Fim</label>
+        <input type="date" class="filter-input" [value]="vendasQuadraDataFim()" (change)="updateVendasQuadraFim($event)">
+      </div>
+      <div class="filter-group agrupamento-group">
+        <label>Agrupamento</label>
+        <div class="agrupamento-toggle">
+          <button [class.active]="vendasQuadraAgrupamento() === 'dia'" (click)="setAgrupamento('vendasQuadra', 'dia')">Dia</button>
+          <button [class.active]="vendasQuadraAgrupamento() === 'mes'" (click)="setAgrupamento('vendasQuadra', 'mes')">Mês</button>
+          <button [class.active]="vendasQuadraAgrupamento() === 'ano'" (click)="setAgrupamento('vendasQuadra', 'ano')">Ano</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-container">
+      @if (vendasQuadraChartData().length > 0) {
+        <div class="chart-wrapper">
+          <svg class="chart-svg" [attr.viewBox]="'0 0 ' + getChartMinWidth(vendasQuadraChartData().length) + ' 260'" preserveAspectRatio="xMinYMid meet" [style.min-width.px]="getChartMinWidth(vendasQuadraChartData().length)">
+            @for (line of getGridLines(vendasQuadraChartMax()); track line) {
+              <line [attr.x1]="50" [attr.y1]="getGridY(line, vendasQuadraChartMax(), 200) + 20" [attr.x2]="getChartMinWidth(vendasQuadraChartData().length) - 20" [attr.y2]="getGridY(line, vendasQuadraChartMax(), 200) + 20" class="grid-line"/>
+              <text [attr.x]="45" [attr.y]="getGridY(line, vendasQuadraChartMax(), 200) + 25" class="grid-label" text-anchor="end">{{ line }}</text>
+            }
+            @for (item of vendasQuadraChartData(); track item.fullDate; let i = $index) {
+              <g class="bar-group">
+                <rect
+                  [attr.x]="60 + i * ((getChartMinWidth(vendasQuadraChartData().length) - 80) / vendasQuadraChartData().length) + ((getChartMinWidth(vendasQuadraChartData().length) - 80) / vendasQuadraChartData().length - getBarWidth(vendasQuadraChartData().length, getChartMinWidth(vendasQuadraChartData().length) - 80)) / 2"
+                  [attr.y]="getBarY(item.value, vendasQuadraChartMax(), 200) + 20"
+                  [attr.width]="getBarWidth(vendasQuadraChartData().length, getChartMinWidth(vendasQuadraChartData().length) - 80)"
+                  [attr.height]="getBarHeight(item.value, vendasQuadraChartMax(), 200)"
+                  class="chart-bar vendasquadra-bar" rx="3"
+                />
+                @if (item.value > 0) {
+                  <text
+                    [attr.x]="60 + i * ((getChartMinWidth(vendasQuadraChartData().length) - 80) / vendasQuadraChartData().length) + ((getChartMinWidth(vendasQuadraChartData().length) - 80) / vendasQuadraChartData().length) / 2"
+                    [attr.y]="getBarY(item.value, vendasQuadraChartMax(), 200) + 14"
+                    class="bar-value" text-anchor="middle"
+                  >{{ item.value }}</text>
+                }
+                <text
+                  [attr.x]="60 + i * ((getChartMinWidth(vendasQuadraChartData().length) - 80) / vendasQuadraChartData().length) + ((getChartMinWidth(vendasQuadraChartData().length) - 80) / vendasQuadraChartData().length) / 2"
+                  [attr.y]="244" class="bar-label" text-anchor="middle"
+                >{{ item.label }}</text>
+              </g>
+            }
+          </svg>
+        </div>
+      } @else {
+        <div class="chart-empty">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="10" width="3" height="8" rx="1"/><rect x="14" y="6" width="3" height="12" rx="1"/></svg>
+          @if (!vendasQuadraSelecionada()) {
+            <p>Selecione uma quadra e um período para visualizar as vendas</p>
+          } @else {
+            <p>Nenhuma venda encontrada para a Qd. {{ vendasQuadraSelecionada() }} no período selecionado</p>
+          }
+        </div>
+      }
+    </div>
+  </div>
+
   <!-- ===================== SEÇÃO 4: CLIENTE ===================== -->
   <div class="chart-section">
     <div class="section-header-bar">

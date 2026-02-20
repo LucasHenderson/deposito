@@ -23,14 +23,22 @@ interface EnderecoBackend {
 export class EnderecoService {
   private http = inject(HttpClient);
   private enderecos = signal<Endereco[]>([]);
+  private todasQuadras = signal<string[]>([]);
 
   getEnderecos() {
     return this.enderecos.asReadonly();
   }
 
+  getTodasQuadras() {
+    return this.todasQuadras.asReadonly();
+  }
+
   carregarEnderecos(): void {
     this.http.get<EnderecoBackend[]>(API_URL).subscribe(data => {
       this.enderecos.set(data.map(e => this.fromBackend(e)));
+    });
+    this.http.get<string[]>(`${API_URL}/todas-quadras`).subscribe(data => {
+      this.todasQuadras.set(data);
     });
   }
 
@@ -129,6 +137,12 @@ export class EnderecoService {
       complemento: e.complemento || '',
       clientesIds: e.clientesIds || []
     };
+  }
+
+  buscarHistoricoQuadra(quadra: string): Observable<{ dataCriacao: string; dataExclusao: string | null }[]> {
+    return this.http.get<{ dataCriacao: string; dataExclusao: string | null }[]>(
+      `${API_URL}/historico-por-quadra`, { params: { quadra } }
+    );
   }
 
   private toBackendRequest(data: EnderecoFormData): any {

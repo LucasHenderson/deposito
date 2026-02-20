@@ -3,6 +3,7 @@ package com.leogas.api.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -40,7 +41,20 @@ public class Endereco {
     @Builder.Default
     private String complemento = "";
 
+    @Column(name = "data_criacao", nullable = false, updatable = false)
+    private LocalDateTime dataCriacao;
+
+    @Column(name = "data_exclusao")
+    private LocalDateTime dataExclusao;
+
     @ManyToMany(mappedBy = "enderecos")
     @Builder.Default
     private Set<Cliente> clientes = new HashSet<>();
+
+    @PrePersist
+    protected void onCreate() {
+        if (dataCriacao == null) {
+            dataCriacao = LocalDateTime.now();
+        }
+    }
 }

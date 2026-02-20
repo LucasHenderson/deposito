@@ -245,6 +245,7 @@
 .vendas-badge { background: linear-gradient(135deg, #1B7B4F 0%, #25A368 100%); }
 .estoque-badge { background: linear-gradient(135deg, #E67E22 0%, #F39C12 100%); }
 .quadras-badge { background: linear-gradient(135deg, #3498DB 0%, #5DADE2 100%); }
+.vendasquadra-badge { background: linear-gradient(135deg, #27AE60 0%, #2ECC71 100%); }
 .cliente-badge { background: linear-gradient(135deg, #9B59B6 0%, #BB8FCE 100%); }
 .entregador-badge { background: linear-gradient(135deg, #E74C3C 0%, #EC7063 100%); }
 
@@ -780,10 +781,12 @@
 }
 
 .vendas-bar { fill: #1B7B4F; }
+.vendasquadra-bar { fill: #27AE60; }
 .cliente-bar { fill: #9B59B6; }
 .entregador-bar { fill: #E74C3C; }
 
 :root[data-theme="dark"] .vendas-bar { fill: #25A368; }
+:root[data-theme="dark"] .vendasquadra-bar { fill: #2ECC71; }
 :root[data-theme="dark"] .cliente-bar { fill: #BB8FCE; }
 :root[data-theme="dark"] .entregador-bar { fill: #EC7063; }
 
